@@ -359,8 +359,8 @@ export function ChatInterface({ sessionId, accessToken, userEmail }: ChatInterfa
         <div ref={messagesEndRef} />
       </div>
 
-      {/* 入力エリア - iOS Safari対応 */}
-      <form onSubmit={handleSubmit} className="shrink-0 p-4 bg-white border-t border-gray-200">
+      {/* 入力エリア - iOS Safari対応、スマホ時は下に余白追加 */}
+      <form onSubmit={handleSubmit} className="shrink-0 p-4 pb-6 md:pb-4 bg-white border-t border-gray-200">
         <div className="flex gap-2">
           <input
             type="text"

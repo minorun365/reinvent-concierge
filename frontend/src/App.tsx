@@ -49,27 +49,27 @@ function AuthenticatedChat({ user, signOut }: { user: any; signOut?: () => void 
   }, [user]) // userが変わった時に再取得
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
-      {/* ユーザー情報バー - Dynamic Island対応でsafe-area分のpadding-topを追加 */}
-      <div
-        className="shrink-0 bg-violet-950 text-white px-4 py-2 flex justify-between items-center text-sm"
-        style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.5rem)' }}
-      >
-        <span>ログイン中: {maskEmail(user?.signInDetails?.loginId)}</span>
-        <button
-          onClick={signOut}
-          className="px-3 py-1 bg-violet-800 hover:bg-violet-700 rounded transition-colors"
-        >
-          ログアウト
-        </button>
-      </div>
-      {/* チャットインターフェース */}
-      <div className="flex-1 min-h-0 overflow-hidden">
-        <ChatInterface
-          sessionId={sessionId}
-          accessToken={accessToken}
-          userEmail={user?.signInDetails?.loginId}
-        />
+    <div className="h-full flex flex-col overflow-hidden bg-gray-100">
+      {/* PC用: コンテンツを中央に最大幅制限 */}
+      <div className="h-full flex flex-col w-full max-w-4xl mx-auto bg-white shadow-lg">
+        {/* ユーザー情報バー - Dynamic Island対応でsafe-area分のpadding-topを追加 */}
+        <div className="safe-area-top shrink-0 bg-violet-950 text-white px-4 md:px-8 pb-2 flex justify-between items-center text-sm">
+          <span>ログイン中: {maskEmail(user?.signInDetails?.loginId)}</span>
+          <button
+            onClick={signOut}
+            className="px-3 py-1 bg-violet-800 hover:bg-violet-700 rounded transition-colors"
+          >
+            ログアウト
+          </button>
+        </div>
+        {/* チャットインターフェース */}
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <ChatInterface
+            sessionId={sessionId}
+            accessToken={accessToken}
+            userEmail={user?.signInDetails?.loginId}
+          />
+        </div>
       </div>
     </div>
   )
