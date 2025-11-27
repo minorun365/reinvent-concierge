@@ -7,12 +7,12 @@ AgentCore Runtime にデプロイして使用。
 
 import os
 import boto3
-from strands import Agent
+from strands import Agent, tool
 from strands.models import BedrockModel
 from strands.tools.mcp import MCPClient
 from strands_tools import retrieve
-from mcp.client.streamable_http import streamablehttp_client
 from mcp import stdio_client, StdioServerParameters
+from tavily import TavilyClient
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
 from bedrock_agentcore.memory.integrations.strands.config import AgentCoreMemoryConfig
 from bedrock_agentcore.memory.integrations.strands.session_manager import AgentCoreMemorySessionManager
@@ -36,17 +36,33 @@ SYSTEM_PROMPT = f"""あなたは AWS re:Invent 2025 のコンシェルジュで�
 利用可能なツール：
 
 1. retrieve - Bedrockナレッジベースから re:Invent 関連の情報を検索（knowledgeBaseId: {KNOWLEDGE_BASE_ID}）
-2. re:Invent 2025 セッション検索ツール
-3. Web検索ツール
+2. re:Invent 2025 セッション検索ツール（search_sessions, get_session_details など）
+3. tavily_search - Web検索で最新情報を取得
 
 回答時のガイドライン：
 - まず retrieve ツールで検索（knowledgeBaseIdは必ず "{KNOWLEDGE_BASE_ID}" を指定）
 - セッションやキーノート、イベントの情報を聞かれたら、re:Inventセッション検索ツールを活用
 - 最新のニュースや公式サイトにない情報は tavily_search で検索
 - 十分な情報が得られないときは、同じツールで別の検索をリトライしたり、複数のツール利用を試すなど試行錯誤してください
-- retrieveツールで見つけた脚注URLが有用な場合、tavily_extractで内容を確認するなどの工夫もできます
 - 最終的に、なるべく簡潔で分かりやすい日本語で回答
 """
+
+
+# Tavily Web検索ツール
+@tool
+def tavily_search(query: str) -> dict:
+    """Web検索で最新情報を取得します。
+
+    Args:
+        query: 検索クエリ
+
+    Returns:
+        検索結果
+    """
+    if not TAVILY_API_KEY:
+        return {"error": "TAVILY_API_KEY is not set"}
+    tavily = TavilyClient(api_key=TAVILY_API_KEY)
+    return tavily.search(query)
 
 
 def convert_event(event) -> dict | None:
@@ -126,36 +142,23 @@ async def invoke_agent(payload, context):
         boto_session=boto_session
     )
 
-    # ツールリストを作成
+    # Pythonツールリストを作成
     tools = []
 
     # 1. Bedrockナレッジベース（retrieve）
-    # retrieveはツールとしてそのまま渡し、knowledgeBaseIdはエージェント呼び出し時に指定
     tools.append(retrieve)
 
-    # MCPクライアントのリスト（複数MCPを統合）
-    mcp_clients: list[MCPClient] = []
+    # 2. Tavily Web検索（@toolで定義）
+    tools.append(tavily_search)
 
-    # 2. Tavily MCP（Web検索） - リモートMCP
-    if TAVILY_API_KEY:
-        tavily_mcp = MCPClient(
-            lambda: streamablehttp_client(
-                f"https://mcp.tavily.com/mcp/?tavilyApiKey={TAVILY_API_KEY}"
-            ),
-            prefix="tavily"  # ツール名に接頭辞を付けて衝突回避
-        )
-        mcp_clients.append(tavily_mcp)
-
-    # 3. re-invent-2025-mcp（セッション情報） - ローカルMCP (stdio)
+    # 3. re-invent-2025-mcp（セッション情報） - MCPクライアント
     reinvent_mcp = MCPClient(
         lambda: stdio_client(StdioServerParameters(
             command="uvx",
             args=["re-invent-2025-mcp"],
             env=os.environ.copy()
-        )),
-        prefix="reinvent"  # ツール名に接頭辞を付けて衝突回避
+        ))
     )
-    mcp_clients.append(reinvent_mcp)
 
     # SessionManager作成（Memory IDが設定されている場合のみ）
     session_manager = None
@@ -177,54 +180,27 @@ async def invoke_agent(payload, context):
         trace_attributes["memory.id"] = MEMORY_ID
 
     # MCPクライアントを起動してエージェントを実行
-    if mcp_clients:
-        # ExitStackで複数withをまとめて扱う
-        from contextlib import ExitStack
-        with ExitStack() as stack:
-            mcp_tools = []
+    with reinvent_mcp:
+        # MCPツールを取得
+        mcp_tools = reinvent_mcp.list_tools_sync()
+        all_tools = tools + mcp_tools
 
-            for client in mcp_clients:
-                # それぞれのMCPクライアントをopen
-                stack.enter_context(client)
-                # 各MCPサーバーからツールを取得して結合
-                mcp_tools.extend(client.list_tools_sync())
-
-            # すべてのツールをまとめてAgentに渡す
-            all_tools = tools + mcp_tools
-
-            agent = Agent(
-                model=bedrock_model,
-                system_prompt=SYSTEM_PROMPT,
-                tools=all_tools,
-                session_manager=session_manager,
-                trace_attributes=trace_attributes
-            )
-
-            try:
-                # ストリーミングで応答を取得
-                async for event in agent.stream_async(prompt):
-                    converted = convert_event(event)
-                    if converted:
-                        yield converted
-            finally:
-                # 明示的にクリーンアップ
-                agent.cleanup()
-    else:
-        # MCPなしの場合
         agent = Agent(
             model=bedrock_model,
             system_prompt=SYSTEM_PROMPT,
-            tools=tools,
+            tools=all_tools,
             session_manager=session_manager,
             trace_attributes=trace_attributes
         )
 
         try:
+            # ストリーミングで応答を取得
             async for event in agent.stream_async(prompt):
                 converted = convert_event(event)
                 if converted:
                     yield converted
         finally:
+            # 明示的にクリーンアップ
             agent.cleanup()
 
 
