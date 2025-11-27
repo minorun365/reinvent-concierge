@@ -26,8 +26,8 @@ const TOOL_DISPLAY_NAMES: Record<string, string> = {
   search_speakers: 're:Invent MCP - スピーカー検索ツール',
 }
 
-// AgentCore Runtime設定
-const AGENT_RUNTIME_ARN = import.meta.env.VITE_AGENT_RUNTIME_ARN || 'arn:aws:bedrock-agentcore:us-west-2:715841358122:runtime/reinvent-S3AJ2uCrco'
+// AgentCore Runtime設定（環境変数必須）
+const AGENT_RUNTIME_ARN = import.meta.env.VITE_AGENT_RUNTIME_ARN
 const AWS_REGION = import.meta.env.VITE_AWS_REGION || 'us-west-2'
 
 export function ChatInterface({ sessionId, accessToken, userEmail }: ChatInterfaceProps) {

@@ -81,9 +81,9 @@ AWSコンソールで AgentCore Runtime を作成：
      - `MEMORY_ID`: （Step 2で作成したMemory ID）
 4. 作成後、Runtime ID をメモ → `docs/credentials.md` に記録
 
-### 3.2 認証設定（Cognito JWT）
+### 3.2 環境変数 & 認証設定
 
-Cognito User Pool作成後に設定：
+Cognito User Pool作成後、環境変数と認証を設定：
 
 ```bash
 aws bedrock-agentcore-control update-agent-runtime \
@@ -91,10 +91,19 @@ aws bedrock-agentcore-control update-agent-runtime \
   --agent-runtime-artifact 'containerConfiguration={containerUri=<ecr-uri>}' \
   --role-arn '<service-role-arn>' \
   --network-configuration 'networkMode=PUBLIC' \
+  --environment-variables 'TAVILY_API_KEY=<your-tavily-api-key>,KNOWLEDGE_BASE_ID=<your-kb-id>,MEMORY_ID=<your-memory-id>' \
   --authorizer-configuration '{"customJWTAuthorizer":{"discoveryUrl":"https://cognito-idp.us-west-2.amazonaws.com/<user-pool-id>/.well-known/openid-configuration","allowedClients":["<app-client-id>"]}}' \
   --region us-west-2 \
   --profile <your-profile>
 ```
+
+**必須の環境変数：**
+
+| 変数名 | 説明 |
+|--------|------|
+| `TAVILY_API_KEY` | Tavily API キー（Web検索用） |
+| `KNOWLEDGE_BASE_ID` | Bedrock ナレッジベース ID |
+| `MEMORY_ID` | AgentCore Memory ID |
 
 > 具体的な値は `docs/credentials.md` を参照
 
@@ -381,9 +390,33 @@ CMD ["uv", "run", "opentelemetry-instrument", "python", "-u", "main.py"]
 
 1. ECRログイン
 2. Docker ビルド & プッシュ
-3. AgentCore Runtime 更新（全パラメータ必須）
+3. AgentCore Runtime 更新
 
-> 具体的なコマンドは `docs/credentials.md` を参照
+```bash
+# 1. ECRログイン
+aws ecr get-login-password --region us-west-2 --profile <your-profile> | \
+  docker login --username AWS --password-stdin \
+  <your-account-id>.dkr.ecr.us-west-2.amazonaws.com
+
+# 2. ビルド & プッシュ
+cd backend
+docker build --platform linux/arm64 -t reinvent-concierge:latest .
+docker tag reinvent-concierge:latest <your-account-id>.dkr.ecr.us-west-2.amazonaws.com/reinvent-concierge:latest
+docker push <your-account-id>.dkr.ecr.us-west-2.amazonaws.com/reinvent-concierge:latest
+
+# 3. Runtime更新（全パラメータ必須）
+aws bedrock-agentcore-control update-agent-runtime \
+  --agent-runtime-id <runtime-id> \
+  --agent-runtime-artifact 'containerConfiguration={containerUri=<ecr-uri>}' \
+  --role-arn '<service-role-arn>' \
+  --network-configuration 'networkMode=PUBLIC' \
+  --environment-variables 'TAVILY_API_KEY=<your-tavily-api-key>,KNOWLEDGE_BASE_ID=<your-kb-id>,MEMORY_ID=<your-memory-id>' \
+  --authorizer-configuration '{"customJWTAuthorizer":{"discoveryUrl":"https://cognito-idp.us-west-2.amazonaws.com/<user-pool-id>/.well-known/openid-configuration","allowedClients":["<app-client-id>"]}}' \
+  --region us-west-2 \
+  --profile <your-profile>
+```
+
+> 具体的な値は `docs/credentials.md` を参照
 
 ### フロントエンド更新
 

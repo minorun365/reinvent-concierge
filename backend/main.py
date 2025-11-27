@@ -23,8 +23,8 @@ app = BedrockAgentCoreApp()
 # 環境変数から設定を取得
 AWS_REGION = os.environ.get("AWS_REGION", "us-west-2")
 TAVILY_API_KEY = os.environ.get("TAVILY_API_KEY", "")
-KNOWLEDGE_BASE_ID = os.environ.get("KNOWLEDGE_BASE_ID", "RT8AH7FKCS")
-MEMORY_ID = os.environ.get("MEMORY_ID", "reinvent2025-My6hDB5l3L")
+KNOWLEDGE_BASE_ID = os.environ.get("KNOWLEDGE_BASE_ID", "")
+MEMORY_ID = os.environ.get("MEMORY_ID", "")
 
 # モデルID（Claude Sonnet 4.5 Cross-Region Inference Profile）
 MODEL_ID = "us.anthropic.claude-sonnet-4-5-20250929-v1:0"
