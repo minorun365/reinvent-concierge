@@ -20,6 +20,9 @@ build/
 docs/credentials.md
 docs/q-and-a.md
 
+# Reference code (contains sensitive info)
+reference/
+
 # IDE
 .vscode/
 .idea/

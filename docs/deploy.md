@@ -75,8 +75,8 @@ AWSコンソールで AgentCore Runtime を作成：
    - Name: `reinvent-concierge-runtime`
    - Container Image: `715841358122.dkr.ecr.us-west-2.amazonaws.com/reinvent-concierge:latest`
    - 環境変数:
-     - `TAVILY_API_KEY`: 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
-     - `KNOWLEDGE_BASE_ID`: RT8AH7FKCS
+     - `TAVILY_API_KEY`: <your-tavily-api-key>
+     - `KNOWLEDGE_BASE_ID`: <your-knowledge-base-id>
      - `MEMORY_ID`: （Step 2で作成したMemory ID）
 4. 作成後、Runtime ID をメモ → `docs/credentials.md` に記録
 
