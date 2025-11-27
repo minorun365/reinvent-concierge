@@ -228,6 +228,7 @@ reinvent-concierge/
 | GitHub作成 | ✅ 完了 | https://github.com/minorun365/reinvent-concierge (private) |
 | ナレッジベース作成 | ✅ 完了 | ID: RT8AH7FKCS |
 | AgentCore Memory作成 | ✅ 完了 | ID: reinvent2025-My6hDB5l3L |
-| ECRプッシュ | 🔲 未実施 | `docs/deploy.md` Step 1 参照 |
-| AgentCore Runtime作成 | 🔲 未実施 | `docs/deploy.md` Step 3 参照 |
+| ECRプッシュ | ✅ 完了 | 715841358122.dkr.ecr.us-west-2.amazonaws.com/reinvent-concierge:latest |
+| AgentCore Runtime作成 | ✅ 完了 | ID: reinvent-S3AJ2uCrco（認証: IAM暫定） |
 | Amplifyデプロイ | 🔲 未実施 | `docs/deploy.md` Step 4-6 参照 |
+| Cognito JWT認証設定 | 🔲 未実施 | Amplifyデプロイ後に実施 |
