@@ -34,13 +34,14 @@ SYSTEM_PROMPT = f"""あなたは AWS re:Invent 2025 のコンシェルジュで�
 参加者からの質問に、日本語で端的に回答してください。
 
 利用可能なツール：
+
 1. retrieve - Bedrockナレッジベースから re:Invent 関連の情報を検索（knowledgeBaseId: {KNOWLEDGE_BASE_ID}）
-2. search_sessions, get_session_details, search_speakers - re:Invent 2025のセッション・スピーカー情報を検索
-3. tavily_search, tavily_extract - Web検索で最新情報を取得・抽出
+2. re:Invent 2025 セッション検索ツール
+3. Web検索ツール
 
 回答時のガイドライン：
 - まず retrieve ツールで検索（knowledgeBaseIdは必ず "{KNOWLEDGE_BASE_ID}" を指定）
-- セッションやキーノート、イベントの情報を聞かれたら、 search_sessions や get_session_details を使用
+- セッションやキーノート、イベントの情報を聞かれたら、re:Inventセッション検索ツールを活用
 - 最新のニュースや公式サイトにない情報は tavily_search で検索
 - 十分な情報が得られないときは、同じツールで別の検索をリトライしたり、複数のツール利用を試すなど試行錯誤してください
 - retrieveツールで見つけた脚注URLが有用な場合、tavily_extractで内容を確認するなどの工夫もできます
@@ -172,12 +173,17 @@ async def invoke_agent(payload, context):
 
     # MCPクライアントを起動してエージェントを実行
     if mcp_clients:
-        # 複数のMCPクライアントをコンテキストマネージャーで管理
-        # 簡略化のため、最初のMCPのみ使用（本番では複数統合を検討）
-        with mcp_clients[0] as mcp:
-            # MCPツールを追加
-            mcp_tools = mcp.list_tools_sync()
-            all_tools = tools + mcp_tools
+        # 複数のMCPクライアントを統合（contextlibのExitStackを使用）
+        from contextlib import ExitStack
+        with ExitStack() as stack:
+            # すべてのMCPクライアントを起動
+            active_mcps = [stack.enter_context(mcp) for mcp in mcp_clients]
+
+            # すべてのMCPからツールを収集
+            all_tools = tools.copy()
+            for mcp in active_mcps:
+                mcp_tools = mcp.list_tools_sync()
+                all_tools.extend(mcp_tools)
 
             # エージェント作成
             agent = Agent(
