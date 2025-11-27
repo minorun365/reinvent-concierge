@@ -2,14 +2,14 @@
 @plugin "@tailwindcss/typography";
 
 /* Amplify UI Authenticator テーマカスタマイズ */
-:root, [data-amplify-theme] {
-  --amplify-colors-brand-primary-10: #f5f3ff;
-  --amplify-colors-brand-primary-20: #ede9fe;
-  --amplify-colors-brand-primary-40: #c4b5fd;
-  --amplify-colors-brand-primary-60: #a78bfa;
-  --amplify-colors-brand-primary-80: #7c3aed;
-  --amplify-colors-brand-primary-90: #6d28d9;
-  --amplify-colors-brand-primary-100: #5b21b6;
+[data-amplify-authenticator] {
+  --amplify-colors-primary-10: #f5f3ff;
+  --amplify-colors-primary-20: #ede9fe;
+  --amplify-colors-primary-40: #c4b5fd;
+  --amplify-colors-primary-60: #a78bfa;
+  --amplify-colors-primary-80: #6d28d9;
+  --amplify-colors-primary-90: #5b21b6;
+  --amplify-colors-primary-100: #4c1d95;
   --amplify-components-button-primary-background-color: #6d28d9;
   --amplify-components-button-primary-hover-background-color: #5b21b6;
   --amplify-components-button-primary-focus-background-color: #5b21b6;
