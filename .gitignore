@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+.uv/
+
+# Build outputs
+dist/
+build/
+*.egg-info/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Amplify
+amplify_outputs.json
+.amplify/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test
+coverage/
+.coverage
+htmlcov/
+
+# Docker
+*.tar
+
+# OS
+Thumbs.db
