@@ -14,8 +14,8 @@ html {
 }
 
 body {
-  /* セーフエリア（ノッチ、ホームインジケーター）対応 */
-  padding-top: env(safe-area-inset-top);
+  /* セーフエリア（ノッチ、ホームインジケーター）対応 - 左右と下のみ */
+  /* padding-topは各ヘッダーで個別に設定 */
   padding-bottom: env(safe-area-inset-bottom);
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
