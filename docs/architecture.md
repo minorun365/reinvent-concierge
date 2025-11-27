@@ -173,7 +173,7 @@ agent = Agent(
 
 ### Dockerでの起動
 ```dockerfile
-CMD ["opentelemetry-instrument", "uv", "run", "python", "agent.py"]
+CMD ["opentelemetry-instrument", "uv", "run", "python", "main.py"]
 ```
 
 ---
@@ -184,25 +184,24 @@ CMD ["opentelemetry-instrument", "uv", "run", "python", "agent.py"]
 reinvent-concierge/
 ├── frontend/                    # Amplify Gen2 + Vite + React
 │   ├── src/
-│   │   ├── App.tsx             # メインアプリ
+│   │   ├── App.tsx             # メインアプリ（Cognito認証統合）
 │   │   ├── components/
-│   │   │   ├── ChatInterface.tsx
-│   │   │   └── ConfigureAmplify.tsx
+│   │   │   └── ChatInterface.tsx  # チャットUI（SSEストリーミング）
+│   │   ├── index.css           # Tailwind CSS v4
 │   │   └── main.tsx
-│   ├── amplify/
-│   │   ├── auth/               # Cognito設定
-│   │   └── backend.ts
 │   ├── package.json
-│   └── vite.config.ts
+│   └── vite.config.ts          # Tailwind v4 プラグイン設定
 ├── backend/                     # Strands Agent
-│   ├── main.py                # BedrockAgentCoreAppエントリーポイント
-│   ├── requirements.txt
-│   └── Dockerfile
+│   ├── main.py                 # BedrockAgentCoreAppエントリーポイント
+│   ├── pyproject.toml          # Python依存関係（uv用）
+│   └── Dockerfile              # ARM64ビルド
 ├── docs/
 │   ├── architecture.md         # このファイル
-│   └── deploy.md               # デプロイ手順
-├── project.md                   # プロジェクト要件
-└── q-and-a.md                   # Q&A
+│   ├── credentials.md          # 認証情報・環境変数
+│   ├── deploy.md               # デプロイ手順
+│   └── strands-agentcore-guide.md  # 技術ガイド
+├── reference/                   # 参考コード
+└── .gitignore
 ```
 
 ---
@@ -220,10 +219,15 @@ reinvent-concierge/
 
 ---
 
-## 次のステップ
+## 実装状況
 
-1. **フロントエンド開発** - Amplify Gen2プロジェクト作成、認証UI、チャット画面
-2. **バックエンド開発** - Strands Agent、BedrockAgentCoreApp、MCP統合
-3. **ECRプッシュ** - Dockerイメージビルド
-4. **GitHub作成** - リポジトリ作成、プッシュ
-5. **手動設定（みのるん）** - ナレッジベース、AgentCoreランタイム作成
+| ステップ | 状態 | 備考 |
+|----------|------|------|
+| フロントエンド開発 | ✅ 完了 | Vite + React + Tailwind CSS v4 + Amplify UI |
+| バックエンド開発 | ✅ 完了 | Strands Agent + BedrockAgentCoreApp |
+| GitHub作成 | ✅ 完了 | https://github.com/minorun365/reinvent-concierge (private) |
+| ナレッジベース作成 | ✅ 完了 | ID: RT8AH7FKCS |
+| AgentCore Memory作成 | ✅ 完了 | ID: reinvent2025-My6hDB5l3L |
+| ECRプッシュ | 🔲 未実施 | `docs/deploy.md` Step 1 参照 |
+| AgentCore Runtime作成 | 🔲 未実施 | `docs/deploy.md` Step 3 参照 |
+| Amplifyデプロイ | 🔲 未実施 | `docs/deploy.md` Step 4-6 参照 |

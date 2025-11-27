@@ -143,15 +143,15 @@ FROM --platform=linux/arm64 ghcr.io/astral-sh/uv:python3.11-bookworm-slim
 
 WORKDIR /app
 
-COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-cache
+COPY pyproject.toml ./
+RUN uv sync --no-cache
 
-COPY . ./
+COPY main.py ./
 
 EXPOSE 8080
 
 # Observability用にopentelemetry-instrumentで起動
-CMD ["opentelemetry-instrument", "uv", "run", "python", "agent.py"]
+CMD ["opentelemetry-instrument", "uv", "run", "python", "main.py"]
 ```
 
 ---
