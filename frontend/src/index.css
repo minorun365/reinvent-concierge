@@ -8,12 +8,23 @@ html, body, #root {
   overflow: hidden;
 }
 
+/* Dynamic Island / ノッチ上部の背景色を1つ目のヘッダーと合わせる */
+html {
+  background-color: #1e1b4b; /* violet-950 */
+}
+
 body {
   /* セーフエリア（ノッチ、ホームインジケーター）対応 */
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
+  /* 背景色もviolet-950に */
+  background-color: #1e1b4b;
+}
+
+#root {
+  background-color: white;
 }
 
 /* iOS Safariでのスクロールバウンス防止 */
