@@ -16,6 +16,9 @@ build/
 .env.local
 .env.*.local
 
+# Credentials (sensitive)
+docs/credentials.md
+
 # IDE
 .vscode/
 .idea/

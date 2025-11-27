@@ -9,10 +9,14 @@ interface Message {
 
 interface ChatInterfaceProps {
   sessionId: string
-  idToken: string
+  accessToken: string
 }
 
-export function ChatInterface({ sessionId, idToken }: ChatInterfaceProps) {
+// AgentCore Runtime設定
+const AGENT_RUNTIME_ARN = import.meta.env.VITE_AGENT_RUNTIME_ARN || 'arn:aws:bedrock-agentcore:us-west-2:715841358122:runtime/reinvent-S3AJ2uCrco'
+const AWS_REGION = import.meta.env.VITE_AWS_REGION || 'us-west-2'
+
+export function ChatInterface({ sessionId, accessToken }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -54,13 +58,16 @@ export function ChatInterface({ sessionId, idToken }: ChatInterfaceProps) {
     ])
 
     try {
-      // AgentCore RuntimeへのSSEリクエスト
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-      const response = await fetch(`${apiUrl}/invoke`, {
+      // AgentCore RuntimeへのHTTPSリクエスト（JWT認証）
+      const escapedAgentArn = encodeURIComponent(AGENT_RUNTIME_ARN)
+      const url = `https://bedrock-agentcore.${AWS_REGION}.amazonaws.com/runtimes/${escapedAgentArn}/invocations?qualifier=DEFAULT`
+
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
+          'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${idToken}`,
+          'X-Amzn-Bedrock-AgentCore-Runtime-Session-Id': sessionId,
         },
         body: JSON.stringify({
           prompt: userMessage.content,
@@ -69,52 +76,72 @@ export function ChatInterface({ sessionId, idToken }: ChatInterfaceProps) {
       })
 
       if (!response.ok) {
+        const errorText = await response.text()
+        console.error('API error:', response.status, errorText)
         throw new Error(`API error: ${response.status}`)
       }
 
-      // SSEストリーミングレスポンスの処理
-      const reader = response.body?.getReader()
-      const decoder = new TextDecoder()
+      // ストリーミングレスポンスの処理
+      const contentType = response.headers.get('content-type') || ''
 
-      if (!reader) {
-        throw new Error('Response body is null')
-      }
+      if (contentType.includes('text/event-stream')) {
+        // SSEストリーミング
+        const reader = response.body?.getReader()
+        const decoder = new TextDecoder()
 
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
+        if (!reader) {
+          throw new Error('Response body is null')
+        }
 
-        const chunk = decoder.decode(value, { stream: true })
-        const lines = chunk.split('\n')
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
 
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6)
-            if (data === '[DONE]') continue
+          const chunk = decoder.decode(value, { stream: true })
+          const lines = chunk.split('\n')
 
-            try {
-              const parsed = JSON.parse(data)
-              if (parsed.text) {
-                setMessages((prev) =>
-                  prev.map((msg) =>
-                    msg.id === assistantMessageId
-                      ? { ...msg, content: msg.content + parsed.text }
-                      : msg
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6)
+              if (data === '[DONE]') continue
+
+              try {
+                const parsed = JSON.parse(data)
+                if (parsed.text) {
+                  setMessages((prev) =>
+                    prev.map((msg) =>
+                      msg.id === assistantMessageId
+                        ? { ...msg, content: msg.content + parsed.text }
+                        : msg
+                    )
                   )
-                )
+                }
+              } catch {
+                // テキストとして追加
+                if (data.trim()) {
+                  setMessages((prev) =>
+                    prev.map((msg) =>
+                      msg.id === assistantMessageId
+                        ? { ...msg, content: msg.content + data }
+                        : msg
+                    )
+                  )
+                }
               }
-            } catch {
-              // JSONパースエラーは無視（テキストチャンクの可能性）
-              setMessages((prev) =>
-                prev.map((msg) =>
-                  msg.id === assistantMessageId
-                    ? { ...msg, content: msg.content + data }
-                    : msg
-                )
-              )
             }
           }
         }
+      } else {
+        // JSONレスポンス
+        const data = await response.json()
+        const responseText = typeof data === 'string' ? data : JSON.stringify(data, null, 2)
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === assistantMessageId
+              ? { ...msg, content: responseText }
+              : msg
+          )
+        )
       }
     } catch (error) {
       console.error('Error:', error)

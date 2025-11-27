@@ -20,15 +20,16 @@ Amplify.configure(amplifyConfig)
 
 function App() {
   const [sessionId] = useState(() => crypto.randomUUID())
-  const [idToken, setIdToken] = useState<string>('')
+  const [accessToken, setAccessToken] = useState<string>('')
 
   useEffect(() => {
     const getToken = async () => {
       try {
         const session = await fetchAuthSession()
-        const token = session.tokens?.idToken?.toString()
+        // JWT認証ではaccessTokenを使用
+        const token = session.tokens?.accessToken?.toString()
         if (token) {
-          setIdToken(token)
+          setAccessToken(token)
         }
       } catch (error) {
         console.error('Error fetching auth session:', error)
@@ -83,7 +84,7 @@ function App() {
           </div>
           {/* チャットインターフェース */}
           <div className="flex-1">
-            <ChatInterface sessionId={sessionId} idToken={idToken} />
+            <ChatInterface sessionId={sessionId} accessToken={accessToken} />
           </div>
         </div>
       )}
