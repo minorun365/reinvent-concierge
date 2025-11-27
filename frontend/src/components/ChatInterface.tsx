@@ -293,7 +293,7 @@ export function ChatInterface({ sessionId, accessToken, userEmail }: ChatInterfa
   return (
     <div className="flex flex-col h-full bg-gray-50">
       {/* ヘッダー */}
-      <header className="shrink-0 bg-violet-900 text-white p-4 shadow-md">
+      <header className="bg-violet-900 text-white p-4 shadow-md">
         <h1 className="text-xl font-bold">re:Invent 2025 コンシェルジュ（非公式）</h1>
         <p className="text-sm opacity-90">みのるんがStrands & AgentCore & Amplifyで構築しています。</p>
       </header>
@@ -359,23 +359,21 @@ export function ChatInterface({ sessionId, accessToken, userEmail }: ChatInterfa
         <div ref={messagesEndRef} />
       </div>
 
-      {/* 入力エリア - iOS Safari対応、スマホ時は下に余白追加 */}
-      <form onSubmit={handleSubmit} className="shrink-0 p-4 pb-6 md:pb-4 bg-white border-t border-gray-200">
+      {/* 入力エリア */}
+      <form onSubmit={handleSubmit} className="p-4 bg-white border-t border-gray-200">
         <div className="flex gap-2">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="メッセージを入力..."
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent text-base"
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
             disabled={isLoading}
-            autoComplete="off"
-            autoCorrect="off"
           />
           <button
             type="submit"
             disabled={isLoading || !input.trim()}
-            className="shrink-0 px-6 py-2 bg-violet-700 text-white rounded-lg hover:bg-violet-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-6 py-2 bg-violet-700 text-white rounded-lg hover:bg-violet-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             送信
           </button>
