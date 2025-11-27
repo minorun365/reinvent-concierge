@@ -50,8 +50,8 @@ function AuthenticatedChat({ user, signOut }: { user: any; signOut?: () => void 
 
   return (
     <div className="h-screen flex flex-col">
-      {/* ユーザー情報バー */}
-      <div className="shrink-0 bg-violet-950 text-white px-4 py-2 flex justify-between items-center text-sm">
+      {/* ユーザー情報バー - Dynamic Island対応 */}
+      <div className="safe-area-top shrink-0 bg-violet-950 text-white px-4 py-2 flex justify-between items-center text-sm">
         <span>ログイン中: {maskEmail(user?.signInDetails?.loginId)}</span>
         <button
           onClick={signOut}
