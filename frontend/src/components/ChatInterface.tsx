@@ -14,6 +14,7 @@ interface Message {
 interface ChatInterfaceProps {
   sessionId: string
   accessToken: string
+  userEmail?: string
 }
 
 // ツール名の日本語表示名マッピング
@@ -29,7 +30,7 @@ const TOOL_DISPLAY_NAMES: Record<string, string> = {
 const AGENT_RUNTIME_ARN = import.meta.env.VITE_AGENT_RUNTIME_ARN || 'arn:aws:bedrock-agentcore:us-west-2:715841358122:runtime/reinvent-S3AJ2uCrco'
 const AWS_REGION = import.meta.env.VITE_AWS_REGION || 'us-west-2'
 
-export function ChatInterface({ sessionId, accessToken }: ChatInterfaceProps) {
+export function ChatInterface({ sessionId, accessToken, userEmail }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -75,12 +76,20 @@ export function ChatInterface({ sessionId, accessToken }: ChatInterfaceProps) {
       const escapedAgentArn = encodeURIComponent(AGENT_RUNTIME_ARN)
       const url = `https://bedrock-agentcore.${AWS_REGION}.amazonaws.com/runtimes/${escapedAgentArn}/invocations?qualifier=DEFAULT`
 
+      // baggageヘッダーでユーザー情報をトレースに伝播
+      const baggageItems: string[] = []
+      if (userEmail) {
+        baggageItems.push(`userEmail=${encodeURIComponent(userEmail)}`)
+      }
+      baggageItems.push(`sessionId=${sessionId}`)
+
       const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
           'X-Amzn-Bedrock-AgentCore-Runtime-Session-Id': sessionId,
+          ...(baggageItems.length > 0 && { 'baggage': baggageItems.join(',') }),
         },
         body: JSON.stringify({
           prompt: userMessage.content,
@@ -284,7 +293,7 @@ export function ChatInterface({ sessionId, accessToken }: ChatInterfaceProps) {
   return (
     <div className="flex flex-col h-full bg-gray-50">
       {/* ヘッダー */}
-      <header className="bg-violet-900 text-white p-4 shadow-md">
+      <header className="shrink-0 bg-violet-900 text-white p-4 shadow-md">
         <h1 className="text-xl font-bold">re:Invent 2025 コンシェルジュ（非公式）</h1>
         <p className="text-sm opacity-90">みのるんがStrands & AgentCore & Amplifyで構築しています。</p>
       </header>
@@ -350,21 +359,23 @@ export function ChatInterface({ sessionId, accessToken }: ChatInterfaceProps) {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* 入力エリア */}
-      <form onSubmit={handleSubmit} className="p-4 bg-white border-t border-gray-200">
+      {/* 入力エリア - iOS Safari対応 */}
+      <form onSubmit={handleSubmit} className="shrink-0 p-4 bg-white border-t border-gray-200">
         <div className="flex gap-2">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="メッセージを入力..."
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent text-base"
             disabled={isLoading}
+            autoComplete="off"
+            autoCorrect="off"
           />
           <button
             type="submit"
             disabled={isLoading || !input.trim()}
-            className="px-6 py-2 bg-violet-700 text-white rounded-lg hover:bg-violet-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="shrink-0 px-6 py-2 bg-violet-700 text-white rounded-lg hover:bg-violet-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             送信
           </button>

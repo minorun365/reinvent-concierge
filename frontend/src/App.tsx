@@ -49,9 +49,9 @@ function AuthenticatedChat({ user, signOut }: { user: any; signOut?: () => void 
   }, [user]) // userが変わった時に再取得
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="h-full flex flex-col overflow-hidden">
       {/* ユーザー情報バー */}
-      <div className="bg-violet-950 text-white px-4 py-2 flex justify-between items-center text-sm">
+      <div className="shrink-0 bg-violet-950 text-white px-4 py-2 flex justify-between items-center text-sm">
         <span>ログイン中: {maskEmail(user?.signInDetails?.loginId)}</span>
         <button
           onClick={signOut}
@@ -61,8 +61,12 @@ function AuthenticatedChat({ user, signOut }: { user: any; signOut?: () => void 
         </button>
       </div>
       {/* チャットインターフェース */}
-      <div className="flex-1">
-        <ChatInterface sessionId={sessionId} accessToken={accessToken} />
+      <div className="flex-1 min-h-0 overflow-hidden">
+        <ChatInterface
+          sessionId={sessionId}
+          accessToken={accessToken}
+          userEmail={user?.signInDetails?.loginId}
+        />
       </div>
     </div>
   )
