@@ -9,9 +9,10 @@ import os
 import boto3
 from strands import Agent
 from strands.models import BedrockModel
-from strands.tools import retrieve
-from strands.tools.mcp.mcp_client import MCPClient
+from strands.tools.mcp import MCPClient
+from strands_tools import retrieve
 from mcp.client.streamable_http import streamablehttp_client
+from mcp import stdio_client, StdioServerParameters
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
 from bedrock_agentcore.memory.integrations.strands.config import AgentCoreMemoryConfig
 from bedrock_agentcore.memory.integrations.strands.session_manager import AgentCoreMemorySessionManager
@@ -25,25 +26,64 @@ TAVILY_API_KEY = os.environ.get("TAVILY_API_KEY", "")
 KNOWLEDGE_BASE_ID = os.environ.get("KNOWLEDGE_BASE_ID", "RT8AH7FKCS")
 MEMORY_ID = os.environ.get("MEMORY_ID", "reinvent2025-My6hDB5l3L")  # 後でみのるんが作成後に設定
 
-# モデルID（Claude Haiku 4.5 Cross-Region Inference Profile）
-MODEL_ID = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+# モデルID（Claude Sonnet 4.5 Cross-Region Inference Profile）
+MODEL_ID = "us.anthropic.claude-sonnet-4-5-20250929-v1:0"
 
 # システムプロンプト
-SYSTEM_PROMPT = """あなたは AWS re:Invent 2025 のコンシェルジュです。
-参加者からの質問に親切に日本語で回答してください。
+SYSTEM_PROMPT = f"""あなたは AWS re:Invent 2025 のコンシェルジュです。
+参加者からの質問に、日本語で端的に回答してください。
 
 利用可能なツール：
-1. retrieve - Bedrockナレッジベースから re:Invent 関連の情報を検索
+1. retrieve - Bedrockナレッジベースから re:Invent 関連の情報を検索（knowledgeBaseId: {KNOWLEDGE_BASE_ID}）
 2. tavily_search - Web検索で最新情報を取得
 3. search_sessions, get_session_details, search_speakers - re:Invent 2025のセッション・スピーカー情報を検索
 
 回答時のガイドライン：
 - セッション情報を聞かれたら、まず search_sessions や get_session_details を使用
-- 一般的な re:Invent 情報は retrieve ツールで検索
+- 一般的な re:Invent 情報は retrieve ツールで検索（knowledgeBaseIdは必ず "{KNOWLEDGE_BASE_ID}" を指定）
 - 最新のニュースや公式サイトにない情報は tavily_search で検索
 - 簡潔で分かりやすい日本語で回答
 - セッション情報には、タイトル、日時、会場、レベルを含める
 """
+
+
+def convert_event(event) -> dict | None:
+    """Strandsのイベントをフロントエンド向けJSON形式に変換
+
+    Bedrock API形式のみを処理し、重複を防ぐ。
+    フロントエンドが期待する形式:
+    - テキスト: {type: 'text', data: 'テキスト内容'}
+    - ツール使用: {type: 'tool_use', tool_name: 'ツール名'}
+    """
+    try:
+        if not hasattr(event, 'get'):
+            return None
+
+        # Bedrock API形式のみを処理（重複防止）
+        inner_event = event.get('event')
+        if not inner_event:
+            return None
+
+        # テキストデルタ
+        content_block_delta = inner_event.get('contentBlockDelta')
+        if content_block_delta:
+            delta = content_block_delta.get('delta', {})
+            text = delta.get('text')
+            if text:
+                return {'type': 'text', 'data': text}
+
+        # ツール使用開始
+        content_block_start = inner_event.get('contentBlockStart')
+        if content_block_start:
+            start = content_block_start.get('start', {})
+            tool_use = start.get('toolUse')
+            if tool_use:
+                tool_name = tool_use.get('name', 'unknown')
+                return {'type': 'tool_use', 'tool_name': tool_name}
+
+        return None
+    except Exception:
+        return None
 
 
 def create_session_manager(
@@ -88,8 +128,8 @@ async def invoke_agent(payload, context):
     tools = []
 
     # 1. Bedrockナレッジベース（retrieve）
-    if KNOWLEDGE_BASE_ID:
-        tools.append(retrieve(knowledge_base_id=KNOWLEDGE_BASE_ID))
+    # retrieveはツールとしてそのまま渡し、knowledgeBaseIdはエージェント呼び出し時に指定
+    tools.append(retrieve)
 
     # MCPクライアントのリスト（複数MCPを統合）
     mcp_clients = []
@@ -102,21 +142,13 @@ async def invoke_agent(payload, context):
         mcp_clients.append(tavily_mcp)
 
     # 3. re-invent-2025-mcp（セッション情報）
-    # ローカルMCPとしてインストール済みの場合
-    try:
-        from mcp.client.stdio import stdio_client
-        import shutil
-
-        # uvx がインストールされているか確認
-        uvx_path = shutil.which("uvx")
-        if uvx_path:
-            reinvent_mcp = MCPClient(lambda: stdio_client(
-                "uvx",
-                ["re-invent-2025-mcp"]
-            ))
-            mcp_clients.append(reinvent_mcp)
-    except ImportError:
-        pass  # stdio_client がない場合はスキップ
+    # StdioServerParametersを使ってuvx経由で起動
+    reinvent_mcp = MCPClient(lambda: stdio_client(StdioServerParameters(
+        command="uvx",
+        args=["re-invent-2025-mcp"],
+        env=os.environ.copy()
+    )))
+    mcp_clients.append(reinvent_mcp)
 
     # SessionManager作成（Memory IDが設定されている場合のみ）
     session_manager = None
@@ -157,7 +189,9 @@ async def invoke_agent(payload, context):
 
             # ストリーミングで応答を取得
             async for event in agent.stream_async(prompt):
-                yield event
+                converted = convert_event(event)
+                if converted:
+                    yield converted
     else:
         # MCPなしの場合
         agent = Agent(
@@ -169,7 +203,9 @@ async def invoke_agent(payload, context):
         )
 
         async for event in agent.stream_async(prompt):
-            yield event
+            converted = convert_event(event)
+            if converted:
+                yield converted
 
 
 # APIサーバーを起動

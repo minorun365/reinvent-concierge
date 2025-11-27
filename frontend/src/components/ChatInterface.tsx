@@ -1,15 +1,28 @@
 import { useState, useRef, useEffect, type FormEvent } from 'react'
+import ReactMarkdown from 'react-markdown'
 
 interface Message {
   id: string
   role: 'user' | 'assistant'
   content: string
   timestamp: Date
+  isToolUsing?: boolean
+  toolCompleted?: boolean
+  toolName?: string
 }
 
 interface ChatInterfaceProps {
   sessionId: string
   accessToken: string
+}
+
+// ツール名の日本語表示名マッピング
+const TOOL_DISPLAY_NAMES: Record<string, string> = {
+  retrieve: 'Strands Retrieve - みのるん特製ナレッジベース検索ツール',
+  tavily_search: 'Tavily MCP - Web検索ツール',
+  search_sessions: 're:Invent MCP - セッション検索ツール',
+  get_session_details: 're:Invent MCP - セッション詳細取得ツール',
+  search_speakers: 're:Invent MCP - スピーカー検索ツール',
 }
 
 // AgentCore Runtime設定
@@ -45,15 +58,15 @@ export function ChatInterface({ sessionId, accessToken }: ChatInterfaceProps) {
     setInput('')
     setIsLoading(true)
 
-    // アシスタントメッセージのプレースホルダー
-    const assistantMessageId = crypto.randomUUID()
+    // アシスタントメッセージのプレースホルダー（思考中）
     setMessages((prev) => [
       ...prev,
       {
-        id: assistantMessageId,
+        id: crypto.randomUUID(),
         role: 'assistant',
         content: '',
         timestamp: new Date(),
+        isToolUsing: false,
       },
     ])
 
@@ -93,6 +106,10 @@ export function ChatInterface({ sessionId, accessToken }: ChatInterfaceProps) {
           throw new Error('Response body is null')
         }
 
+        let currentBuffer = ''
+        let isInToolUse = false
+        let toolUseMessageIndex = -1
+
         while (true) {
           const { done, value } = await reader.read()
           if (done) break
@@ -106,26 +123,130 @@ export function ChatInterface({ sessionId, accessToken }: ChatInterfaceProps) {
               if (data === '[DONE]') continue
 
               try {
-                const parsed = JSON.parse(data)
-                if (parsed.text) {
-                  setMessages((prev) =>
-                    prev.map((msg) =>
-                      msg.id === assistantMessageId
-                        ? { ...msg, content: msg.content + parsed.text }
-                        : msg
-                    )
-                  )
+                const event = JSON.parse(data)
+
+                // デバッグ: イベントの内容を確認
+                console.log('Received event:', JSON.stringify(event, null, 2))
+
+                // エラーイベント
+                if (event.type === 'error') {
+                  setMessages((prev) => {
+                    const newMessages = [...prev]
+                    newMessages[newMessages.length - 1] = {
+                      ...newMessages[newMessages.length - 1],
+                      content: `エラー: ${event.message}`,
+                      isToolUsing: false,
+                    }
+                    return newMessages
+                  })
+                  continue
+                }
+
+                // ツール使用イベント
+                if (event.type === 'tool_use') {
+                  isInToolUse = true
+                  const savedBuffer = currentBuffer
+                  // バックエンドから送られるtool_nameを取得し、日本語表示名にマッピング
+                  const toolName = event.tool_name || 'ツール'
+                  const displayName = TOOL_DISPLAY_NAMES[toolName] || toolName
+
+                  setMessages((prev) => {
+                    const newMessages = [...prev]
+                    if (savedBuffer) {
+                      // 既存のテキストを確定 + ツールインジケーターを追加
+                      newMessages[newMessages.length - 1] = {
+                        ...newMessages[newMessages.length - 1],
+                        content: savedBuffer,
+                        isToolUsing: false,
+                      }
+                      toolUseMessageIndex = newMessages.length
+                      newMessages.push({
+                        id: crypto.randomUUID(),
+                        role: 'assistant',
+                        content: '',
+                        timestamp: new Date(),
+                        isToolUsing: true,
+                        toolCompleted: false,
+                        toolName: displayName,
+                      })
+                    } else {
+                      // テキストがない場合は思考中をツールインジケーターに置き換え
+                      toolUseMessageIndex = newMessages.length - 1
+                      newMessages[newMessages.length - 1] = {
+                        ...newMessages[newMessages.length - 1],
+                        content: '',
+                        isToolUsing: true,
+                        toolCompleted: false,
+                        toolName: displayName,
+                      }
+                    }
+                    return newMessages
+                  })
+
+                  currentBuffer = ''
+                  continue
+                }
+
+                // テキストイベント
+                if (event.type === 'text' && event.data) {
+                  const newText = event.data
+                  if (isInToolUse && currentBuffer === '') {
+                    // ツール使用後の最初のテキスト - ツールを完了状態に
+                    const savedToolIndex = toolUseMessageIndex
+
+                    setMessages((prev) => {
+                      const newMessages = [...prev]
+
+                      // ツールインジケーターを完了状態に変更
+                      if (savedToolIndex >= 0 && savedToolIndex < newMessages.length) {
+                        newMessages[savedToolIndex] = {
+                          ...newMessages[savedToolIndex],
+                          toolCompleted: true,
+                        }
+                      }
+
+                      // 新しいメッセージを追加
+                      newMessages.push({
+                        id: crypto.randomUUID(),
+                        role: 'assistant',
+                        content: newText,
+                        timestamp: new Date(),
+                        isToolUsing: false,
+                      })
+
+                      return newMessages
+                    })
+
+                    currentBuffer = newText
+                    isInToolUse = false
+                    toolUseMessageIndex = -1
+                  } else {
+                    // 通常のテキスト蓄積
+                    currentBuffer += newText
+                    setMessages((prev) => {
+                      const newMessages = [...prev]
+                      newMessages[newMessages.length - 1] = {
+                        ...newMessages[newMessages.length - 1],
+                        content: currentBuffer,
+                        isToolUsing: false,
+                      }
+                      return newMessages
+                    })
+                  }
                 }
               } catch {
-                // テキストとして追加
+                // JSONパースに失敗した場合はテキストとして追加
                 if (data.trim()) {
-                  setMessages((prev) =>
-                    prev.map((msg) =>
-                      msg.id === assistantMessageId
-                        ? { ...msg, content: msg.content + data }
-                        : msg
-                    )
-                  )
+                  currentBuffer += data
+                  setMessages((prev) => {
+                    const newMessages = [...prev]
+                    newMessages[newMessages.length - 1] = {
+                      ...newMessages[newMessages.length - 1],
+                      content: currentBuffer,
+                      isToolUsing: false,
+                    }
+                    return newMessages
+                  })
                 }
               }
             }
@@ -135,26 +256,26 @@ export function ChatInterface({ sessionId, accessToken }: ChatInterfaceProps) {
         // JSONレスポンス
         const data = await response.json()
         const responseText = typeof data === 'string' ? data : JSON.stringify(data, null, 2)
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === assistantMessageId
-              ? { ...msg, content: responseText }
-              : msg
-          )
-        )
+        setMessages((prev) => {
+          const newMessages = [...prev]
+          newMessages[newMessages.length - 1] = {
+            ...newMessages[newMessages.length - 1],
+            content: responseText,
+          }
+          return newMessages
+        })
       }
     } catch (error) {
       console.error('Error:', error)
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === assistantMessageId
-            ? {
-                ...msg,
-                content: 'エラーが発生しました。しばらくしてからもう一度お試しください。',
-              }
-            : msg
-        )
-      )
+      setMessages((prev) => {
+        const newMessages = [...prev]
+        newMessages[newMessages.length - 1] = {
+          ...newMessages[newMessages.length - 1],
+          content: 'エラーが発生しました。しばらくしてからもう一度お試しください。',
+          isToolUsing: false,
+        }
+        return newMessages
+      })
     } finally {
       setIsLoading(false)
     }
@@ -163,9 +284,9 @@ export function ChatInterface({ sessionId, accessToken }: ChatInterfaceProps) {
   return (
     <div className="flex flex-col h-full bg-gray-50">
       {/* ヘッダー */}
-      <header className="bg-orange-600 text-white p-4 shadow-md">
-        <h1 className="text-xl font-bold">re:Invent 2025 コンシェルジュ</h1>
-        <p className="text-sm opacity-90">AWS re:Invent 2025 についてなんでも聞いてください</p>
+      <header className="bg-violet-900 text-white p-4 shadow-md">
+        <h1 className="text-xl font-bold">re:Invent 2025 コンシェルジュ（非公式）</h1>
+        <p className="text-sm opacity-90">AWS re:Invent 2025 についてなんでも聞いてね！</p>
       </header>
 
       {/* メッセージエリア */}
@@ -188,13 +309,40 @@ export function ChatInterface({ sessionId, accessToken }: ChatInterfaceProps) {
             <div
               className={`max-w-[80%] p-3 rounded-lg ${
                 message.role === 'user'
-                  ? 'bg-orange-600 text-white'
+                  ? 'bg-violet-700 text-white'
                   : 'bg-white border border-gray-200 text-gray-800'
               }`}
             >
-              <p className="whitespace-pre-wrap">{message.content}</p>
-              {message.role === 'assistant' && isLoading && !message.content && (
-                <span className="inline-block animate-pulse">...</span>
+              {/* 思考中スピナー（アシスタントメッセージが空でツール使用中でない場合） */}
+              {message.role === 'assistant' && !message.content && !message.isToolUsing && (
+                <div className="flex items-center gap-2 text-gray-600 text-sm">
+                  <span className="inline-block w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></span>
+                  思考中...
+                </div>
+              )}
+
+              {/* ツール使用インジケーター */}
+              {message.isToolUsing && (
+                <div className={`flex items-center gap-2 text-sm ${message.toolCompleted ? 'text-green-600' : 'text-violet-600'}`}>
+                  {message.toolCompleted ? (
+                    <span className="inline-block w-4 h-4 text-green-600">✓</span>
+                  ) : (
+                    <span className="inline-block w-4 h-4 border-2 border-violet-600 border-t-transparent rounded-full animate-spin"></span>
+                  )}
+                  🔧 {message.toolName || 'ツール'}{message.toolCompleted ? 'を利用しました' : 'を利用しています...'}
+                </div>
+              )}
+
+              {/* ユーザーメッセージ */}
+              {message.role === 'user' && (
+                <p className="whitespace-pre-wrap">{message.content}</p>
+              )}
+
+              {/* アシスタントメッセージ本文 */}
+              {message.role === 'assistant' && message.content && !message.isToolUsing && (
+                <div className="prose prose-sm max-w-none prose-headings:mt-3 prose-headings:mb-2 prose-p:my-1 prose-ul:my-1 prose-li:my-0 prose-table:my-2">
+                  <ReactMarkdown>{message.content}</ReactMarkdown>
+                </div>
               )}
             </div>
           </div>
@@ -210,13 +358,13 @@ export function ChatInterface({ sessionId, accessToken }: ChatInterfaceProps) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="メッセージを入力..."
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
             disabled={isLoading}
           />
           <button
             type="submit"
             disabled={isLoading || !input.trim()}
-            className="px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-6 py-2 bg-violet-700 text-white rounded-lg hover:bg-violet-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             送信
           </button>

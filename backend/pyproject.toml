@@ -6,8 +6,8 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "bedrock-agentcore[strands-agents]>=0.1.0",
-    "strands-agents>=0.1.0",
     "strands-agents[otel]>=0.1.0",
+    "strands-agents-tools>=0.1.0",
     "aws-opentelemetry-distro>=0.10.1",
     "mcp>=1.0.0",
     "re-invent-2025-mcp>=0.1.0",

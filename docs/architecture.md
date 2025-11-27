@@ -1,44 +1,6 @@
-# re:Inventコンシェルジュ - アーキテクチャ設計
+# アーキテクチャ設計
 
-## 概要
-
-AWS re:Invent 2025に関する質問に答えるAIエージェント・チャットボット
-
-## 技術スタック
-
-### フロントエンド
-- **フレームワーク**: Vite + React + TypeScript
-- **ホスティング**: AWS Amplify Gen2
-- **認証**: Amazon Cognito (マネージド認証画面)
-- **UIライブラリ**: AWS Amplify UI React + Tailwind CSS
-
-### バックエンド
-- **エージェントフレームワーク**: Strands Agents
-- **ランタイム**: Amazon Bedrock AgentCore Runtime
-- **SDK**: `bedrock-agentcore` (BedrockAgentCoreApp) ※FastAPIではない
-- **LLM**: Claude Haiku 4.5 (`us.anthropic.claude-haiku-4-5-20251001-v1:0`)
-- **コンテナ**: Docker (ARM64) → ECR
-
-### ツール（MCP）
-1. **Tavily公式リモートMCP** - Web検索
-2. **Strands公式ビルトイン「retrieve」** - Bedrockナレッジベース検索
-3. **re-invent-2025-mcp** - re:Invent 2025セッション情報（ローカルMCP）
-   - PyPI: https://pypi.org/project/re-invent-2025-mcp/
-   - GitHub: https://github.com/manu-mishra/reinvent-mcp-2025
-   - インストール: `pip install re-invent-2025-mcp` または `uvx re-invent-2025-mcp`
-   - 機能: 1,843セッションの検索、スピーカー情報、レベル/形式フィルタリング
-
-### 会話履歴
-- **AgentCore Memory** + **Strands Session Manager**
-  - 短期記憶（STM）: セッション内の会話履歴
-  - 画面リロードで履歴リセット（session_idを新規生成）
-
-### 監視
-- **AgentCore Observability** → CloudWatch GenAI Observability
-
----
-
-## アーキテクチャ図
+## 構成図
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -47,29 +9,31 @@ AWS re:Invent 2025に関する質問に答えるAIエージェント・チャッ
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│                    AWS Amplify Gen2                                  │
+│                    AWS Amplify Hosting                               │
 │  ┌─────────────────────────────────────────────────────────────┐   │
 │  │  Vite + React アプリケーション                                │   │
 │  │  - Cognito認証 (メール+パスワード)                            │   │
-│  │  - チャットUI (ストリーミング対応)                            │   │
+│  │  - チャットUI (SSEストリーミング対応)                         │   │
+│  │  - Tailwind CSS v4 + @tailwindcss/typography                 │   │
 │  └─────────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────────┘
-                                    │ JWT Token (OAuth)
+                                    │ JWT Token (Cognito access_token)
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────┐
 │                 Bedrock AgentCore Runtime                            │
 │  ┌─────────────────────────────────────────────────────────────┐   │
 │  │  Strands Agent (BedrockAgentCoreApp + Docker ARM64)          │   │
-│  │  - Claude Haiku 4.5                                          │   │
-│  │  - SSEストリーミング                                          │   │
+│  │  - Claude Sonnet 4.5 (Cross-Region Inference)                │   │
+│  │  - SSEストリーミング応答                                      │   │
+│  │  - AgentCore Memory (短期記憶)                               │   │
 │  └─────────────────────────────────────────────────────────────┘   │
 │                          │                                          │
 │         ┌────────────────┼────────────────┐                        │
 │         ▼                ▼                ▼                        │
 │  ┌───────────┐    ┌───────────┐    ┌───────────┐                  │
 │  │ Tavily    │    │ Bedrock   │    │re-invent  │                  │
-│  │ MCP       │    │ KB MCP    │    │-2025-mcp  │                  │
-│  │(リモート)  │    │(retrieve) │    │(ローカル)  │                  │
+│  │ MCP       │    │ KB        │    │-2025-mcp  │                  │
+│  │(リモート)  │    │(retrieve) │    │(stdio)    │                  │
 │  └───────────┘    └───────────┘    └───────────┘                  │
 └─────────────────────────────────────────────────────────────────────┘
                                     │
@@ -78,157 +42,85 @@ AWS re:Invent 2025に関する質問に答えるAIエージェント・チャッ
 │              CloudWatch GenAI Observability                          │
 │  - トレース（エージェント実行フロー）                                 │
 │  - メトリクス（レイテンシ、トークン使用量）                           │
-│  - ログ                                                              │
 └─────────────────────────────────────────────────────────────────────┘
 ```
-
----
 
 ## リージョン
 
 **すべて us-west-2 (オレゴン) に統一**
 
----
-
 ## 認証フロー
 
 1. ユーザーがアプリにアクセス
-2. Cognito Managed Login画面を表示（日本語化済み）
+2. Amplify UI Authenticator でサインイン画面を表示
 3. メール+パスワードでサインイン/サインアップ
-4. JWTトークンを取得
-5. AgentCore RuntimeにJWTで認証してリクエスト
-
-### Cognito日本語化
-
-Managed Loginは `lang=ja` パラメータで日本語化可能：
-```
-https://<domain>/oauth2/authorize?lang=ja&response_type=code&client_id=<client_id>&redirect_uri=<url>
-```
-
-ただし、Amplify UIを使う場合は `I18n.putVocabularies()` で翻訳を設定（参考コードと同様）
-
----
+4. Cognito から JWT (access_token) を取得
+5. AgentCore Runtime に `Authorization: Bearer <token>` で認証
 
 ## ストリーミング処理
 
-### バックエンド（SSE形式）
+### バックエンド（convert_event関数）
+
+Strands Agentsからのイベントをフロントエンド向けJSON形式に変換：
+
 ```python
-async def stream_response():
-    async for event in agent.stream_async(message):
-        if event.type == "text":
-            yield f"data: {json.dumps({'type': 'text', 'content': event.text})}\n\n"
-        elif event.type == "tool_use":
-            yield f"data: {json.dumps({'type': 'tool_use', 'tool': event.tool_name})}\n\n"
+def convert_event(event) -> dict | None:
+    # Bedrock API形式: event.event.contentBlockDelta.delta.text
+    if event.get('event'):
+        inner_event = event.get('event')
+        if inner_event.get('contentBlockDelta'):
+            delta = inner_event['contentBlockDelta'].get('delta', {})
+            if delta.get('text'):
+                return {'type': 'text', 'data': delta['text']}
+        if inner_event.get('contentBlockStart'):
+            start = inner_event['contentBlockStart'].get('start', {})
+            if start.get('toolUse'):
+                return {'type': 'tool_use', 'tool_name': start['toolUse'].get('name')}
+    return None
 ```
 
-### フロントエンド
-- Server-Sent Events (SSE) でリアルタイム受信
-- テキストバッファで蓄積・表示
-- ツール使用時はインジケーター表示 → 完了でチェックマーク
+### フロントエンド（SSE処理）
 
----
-
-## AgentCore Runtimeへのデプロイ
-
-### 必須要件
-- **プラットフォーム**: linux/arm64
-- **エンドポイント**: `/invocations` (POST), `/ping` (GET)
-- **ポート**: 8080
-
-### 認証設定（重要！）
-更新時に `--authorizer-configuration` を必ず指定：
-```bash
-aws bedrock-agentcore-control update-agent-runtime \
-  --agent-runtime-id <runtime-id> \
-  --agent-runtime-artifact containerConfiguration={containerUri=<ecr-uri>} \
-  --authorizer-configuration '{
-    "customJWTAuthorizer": {
-      "discoveryUrl": "https://cognito-idp.us-west-2.amazonaws.com/<user-pool-id>/.well-known/openid-configuration",
-      "allowedClients": ["<app-client-id>"]
-    }
-  }'
+```typescript
+// イベントタイプに応じて処理
+if (event.type === 'tool_use') {
+  // ツール使用インジケーター表示
+  const displayName = TOOL_DISPLAY_NAMES[event.tool_name] || event.tool_name
+}
+if (event.type === 'text' && event.data) {
+  // テキストをバッファに追加
+  currentBuffer += event.data
+}
 ```
 
----
-
-## Observability設定
-
-### 必要なパッケージ
-```
-bedrock-agentcore[strands-agents]
-strands-agents[otel]
-aws-opentelemetry-distro
-```
-
-### trace_attributes設定
-```python
-agent = Agent(
-    model="anthropic.claude-haiku-4-5-20251001-v1:0",
-    trace_attributes={
-        "session.id": session_id,
-        "actor.id": actor_id,
-    }
-)
-```
-
-### Dockerでの起動
-```dockerfile
-CMD ["opentelemetry-instrument", "uv", "run", "python", "main.py"]
-```
-
----
-
-## ディレクトリ構成
-
-```
-reinvent-concierge/
-├── frontend/                    # Amplify Gen2 + Vite + React
-│   ├── src/
-│   │   ├── App.tsx             # メインアプリ（Cognito認証統合）
-│   │   ├── components/
-│   │   │   └── ChatInterface.tsx  # チャットUI（SSEストリーミング）
-│   │   ├── index.css           # Tailwind CSS v4
-│   │   └── main.tsx
-│   ├── package.json
-│   └── vite.config.ts          # Tailwind v4 プラグイン設定
-├── backend/                     # Strands Agent
-│   ├── main.py                 # BedrockAgentCoreAppエントリーポイント
-│   ├── pyproject.toml          # Python依存関係（uv用）
-│   └── Dockerfile              # ARM64ビルド
-├── docs/
-│   ├── architecture.md         # このファイル
-│   ├── credentials.md          # 認証情報・環境変数
-│   ├── deploy.md               # デプロイ手順
-│   └── strands-agentcore-guide.md  # 技術ガイド
-├── reference/                   # 参考コード
-└── .gitignore
-```
-
----
-
-## 環境変数・シークレット
+## 環境変数
 
 ### バックエンド（AgentCore環境変数）
-| 変数名 | 説明 | 設定場所 |
-|--------|------|----------|
-| TAVILY_API_KEY | Tavily APIキー | AgentCore環境変数 |
-| KNOWLEDGE_BASE_ID | Bedrockナレッジベース | コード内べた書きOK |
 
-### フロントエンド
-- `amplify_outputs.json` で自動設定（Cognito等）
+| 変数名 | 説明 |
+|--------|------|
+| TAVILY_API_KEY | Tavily APIキー |
+| KNOWLEDGE_BASE_ID | Bedrockナレッジベース ID |
+| MEMORY_ID | AgentCore Memory ID |
 
----
+### フロントエンド（.env.local）
+
+| 変数名 | 説明 |
+|--------|------|
+| VITE_USER_POOL_ID | Cognito User Pool ID |
+| VITE_USER_POOL_CLIENT_ID | Cognito App Client ID |
+| VITE_AGENT_RUNTIME_ARN | AgentCore Runtime ARN |
+| VITE_AWS_REGION | AWSリージョン |
 
 ## 実装状況
 
-| ステップ | 状態 | 備考 |
-|----------|------|------|
-| フロントエンド開発 | ✅ 完了 | Vite + React + Tailwind CSS v4 + Amplify UI |
-| バックエンド開発 | ✅ 完了 | Strands Agent + BedrockAgentCoreApp |
-| GitHub作成 | ✅ 完了 | https://github.com/minorun365/reinvent-concierge (private) |
-| ナレッジベース作成 | ✅ 完了 | ID: RT8AH7FKCS |
-| AgentCore Memory作成 | ✅ 完了 | ID: reinvent2025-My6hDB5l3L |
-| ECRプッシュ | ✅ 完了 | 715841358122.dkr.ecr.us-west-2.amazonaws.com/reinvent-concierge:latest |
-| AgentCore Runtime作成 | ✅ 完了 | ID: reinvent-S3AJ2uCrco（認証: IAM暫定） |
-| Amplifyデプロイ | 🔲 未実施 | `docs/deploy.md` Step 4-6 参照 |
-| Cognito JWT認証設定 | 🔲 未実施 | Amplifyデプロイ後に実施 |
+| コンポーネント | 状態 | 備考 |
+|---------------|------|------|
+| フロントエンド | ✅ 完了 | Vite + React + Tailwind CSS v4 |
+| バックエンド | ✅ 完了 | Strands Agent + BedrockAgentCoreApp |
+| Cognito認証 | ✅ 完了 | JWT認証（access_token） |
+| ナレッジベース | ✅ 完了 | ID: RT8AH7FKCS |
+| AgentCore Memory | ✅ 完了 | ID: reinvent2025-My6hDB5l3L |
+| AgentCore Runtime | ✅ 完了 | ID: reinvent-S3AJ2uCrco |
+| Amplify Hosting | ✅ 完了 | 自動デプロイ設定済み |
+| ツール使用UX | 🔄 実装中 | ツール名表示対応中 |

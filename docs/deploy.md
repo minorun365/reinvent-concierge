@@ -2,6 +2,8 @@
 
 このドキュメントでは、re:Inventコンシェルジュのデプロイ手順を説明します。
 
+> **Note**: 実際の認証情報・コピペ用コマンドは `docs/credentials.md`（gitignore済み）を参照してください。
+
 ## 前提条件
 
 - AWS SSO ログイン済み
@@ -10,7 +12,7 @@
 - uv インストール済み
 
 ```bash
-aws sso login --profile=sandbox
+aws sso login --profile=<your-profile>
 ```
 
 ---
@@ -23,34 +25,33 @@ aws sso login --profile=sandbox
 aws ecr create-repository \
   --repository-name reinvent-concierge \
   --region us-west-2 \
-  --profile sandbox
+  --profile <your-profile>
 ```
 
 ### 1.2 ECRログイン
 
 ```bash
-aws ecr get-login-password --region us-west-2 --profile sandbox | \
+aws ecr get-login-password --region us-west-2 --profile <your-profile> | \
   docker login --username AWS --password-stdin \
-  715841358122.dkr.ecr.us-west-2.amazonaws.com
+  <your-account-id>.dkr.ecr.us-west-2.amazonaws.com
 ```
 
 ### 1.3 Dockerイメージビルド & プッシュ
 
 ```bash
-cd /Users/mi-onda/git/minorun365/reinvent-concierge
+cd backend
 
-# ARM64でビルド & プッシュ
-docker buildx build \
-  --platform linux/arm64 \
-  -t 715841358122.dkr.ecr.us-west-2.amazonaws.com/reinvent-concierge:latest \
-  -f backend/Dockerfile \
-  backend/ \
-  --push
+# ARM64でビルド
+docker build --platform linux/arm64 -t reinvent-concierge:latest .
+
+# タグ付け & プッシュ
+docker tag reinvent-concierge:latest <your-account-id>.dkr.ecr.us-west-2.amazonaws.com/reinvent-concierge:latest
+docker push <your-account-id>.dkr.ecr.us-west-2.amazonaws.com/reinvent-concierge:latest
 ```
 
 ---
 
-## Step 2: AgentCore Memory 作成（みのるんが実施）
+## Step 2: AgentCore Memory 作成
 
 AWSコンソールで AgentCore Memory を作成：
 
@@ -63,7 +64,7 @@ AWSコンソールで AgentCore Memory を作成：
 
 ---
 
-## Step 3: AgentCore Runtime 作成（みのるんが実施）
+## Step 3: AgentCore Runtime 作成
 
 ### 3.1 Runtime 作成
 
@@ -72,8 +73,8 @@ AWSコンソールで AgentCore Runtime を作成：
 1. Amazon Bedrock コンソール → AgentCore → Runtimes
 2. 「Create runtime」をクリック
 3. 設定：
-   - Name: `reinvent-concierge-runtime`
-   - Container Image: `715841358122.dkr.ecr.us-west-2.amazonaws.com/reinvent-concierge:latest`
+   - Name: `reinvent`
+   - Container Image: `<your-account-id>.dkr.ecr.us-west-2.amazonaws.com/reinvent-concierge:latest`
    - 環境変数:
      - `TAVILY_API_KEY`: <your-tavily-api-key>
      - `KNOWLEDGE_BASE_ID`: <your-knowledge-base-id>
@@ -82,67 +83,40 @@ AWSコンソールで AgentCore Runtime を作成：
 
 ### 3.2 認証設定（Cognito JWT）
 
-Amplifyデプロイ後に Cognito 情報を取得してから設定：
+Cognito User Pool作成後に設定：
 
 ```bash
 aws bedrock-agentcore-control update-agent-runtime \
   --agent-runtime-id <runtime-id> \
-  --agent-runtime-artifact containerConfiguration={containerUri=715841358122.dkr.ecr.us-west-2.amazonaws.com/reinvent-concierge:latest} \
-  --authorizer-configuration '{
-    "customJWTAuthorizer": {
-      "discoveryUrl": "https://cognito-idp.us-west-2.amazonaws.com/<user-pool-id>/.well-known/openid-configuration",
-      "allowedClients": ["<app-client-id>"]
-    }
-  }' \
+  --agent-runtime-artifact 'containerConfiguration={containerUri=<ecr-uri>}' \
+  --role-arn '<service-role-arn>' \
+  --network-configuration 'networkMode=PUBLIC' \
+  --authorizer-configuration '{"customJWTAuthorizer":{"discoveryUrl":"https://cognito-idp.us-west-2.amazonaws.com/<user-pool-id>/.well-known/openid-configuration","allowedClients":["<app-client-id>"]}}' \
   --region us-west-2 \
-  --profile sandbox
+  --profile <your-profile>
 ```
+
+> 具体的な値は `docs/credentials.md` を参照
+
+10秒ほどでデプロイ完了します。
 
 ---
 
-## Step 4: Amplify フロントエンドデプロイ
+## Step 4: Cognito User Pool 作成
 
-### 4.1 Amplify プロジェクト初期化
+AWSコンソールで Cognito User Pool を作成：
 
-```bash
-cd frontend
-
-# Amplify CLI インストール（まだの場合）
-npm install -g @aws-amplify/cli
-
-# Amplify プロジェクト初期化
-amplify init
-```
-
-### 4.2 認証（Cognito）追加
-
-```bash
-amplify add auth
-
-# 設定:
-# - Default configuration
-# - Email でサインイン
-# - No advanced settings
-```
-
-### 4.3 デプロイ
-
-```bash
-amplify push
-```
-
-### 4.4 Cognito 情報の確認
-
-デプロイ後、`amplify_outputs.json` から以下を確認：
-
-- User Pool ID
-- App Client ID
-
-これらを `docs/credentials.md` に記録し、Step 3.2 の認証設定を実行。
+1. Amazon Cognito → User Pools → Create user pool
+2. 設定：
+   - Sign-in: Email
+   - Password policy: デフォルト
+   - MFA: Off
+3. App client を作成
+4. User Pool ID と App Client ID をメモ → `docs/credentials.md` に記録
 
 ---
 
-## Step 5: フロントエンド環境変数設定
+## Step 5: フロントエンド設定
 
 ### 5.1 .env.local 作成
 
@@ -152,7 +126,8 @@ cd frontend
 cat > .env.local << 'EOF'
 VITE_USER_POOL_ID=<user-pool-id>
 VITE_USER_POOL_CLIENT_ID=<app-client-id>
-VITE_API_URL=<agentcore-runtime-endpoint>
+VITE_AGENT_RUNTIME_ARN=<agent-runtime-arn>
+VITE_AWS_REGION=us-west-2
 EOF
 ```
 
@@ -170,8 +145,7 @@ npm run dev
 
 1. Amplify コンソール → 「Host web app」
 2. GitHub を選択
-3. リポジトリ: `minorun365/reinvent-concierge`
-4. ブランチ: `main`
+3. リポジトリとブランチを選択
 
 ### 6.2 ビルド設定
 
@@ -199,51 +173,173 @@ frontend:
 
 Amplifyコンソールで環境変数を設定：
 
-- `VITE_USER_POOL_ID`: <user-pool-id>
-- `VITE_USER_POOL_CLIENT_ID`: <app-client-id>
-- `VITE_API_URL`: <agentcore-runtime-endpoint>
-
----
-
-## Step 7: カスタムドメイン設定（オプション）
-
-1. Amplify コンソール → ドメイン管理
-2. `reinvent.minoruonda.com` を追加
-3. Route 53 で CNAME レコードを設定
+- `VITE_USER_POOL_ID`
+- `VITE_USER_POOL_CLIENT_ID`
+- `VITE_AGENT_RUNTIME_ARN`
+- `VITE_AWS_REGION`
 
 ---
 
 ## トラブルシューティング
 
-### Docker ビルドが失敗する
+### ヘルスチェックエラー（424）
 
-```bash
-# Docker Desktop が起動しているか確認
-docker info
+コンテナが起動に失敗している可能性。
+- CloudWatch Logsを確認（`/aws/bedrock-agentcore/runtimes/<runtime-id>`）
+- Dockerfileがシンプルな構成になっているか確認
 
-# ビルドキャッシュをクリア
-docker buildx prune -f
+### 認証エラー（403）
+
+- `--authorizer-configuration` が正しく設定されているか確認
+- Cognito **access token** を使用しているか確認（id tokenではなく）
+
+### IAM権限エラー（AccessDeniedException）
+
+AgentCore Runtimeのサービスロールに必要な権限を追加：
+
+**bedrock:Retrieve（ナレッジベース用）**
+```json
+{
+    "Effect": "Allow",
+    "Action": "bedrock:Retrieve",
+    "Resource": "arn:aws:bedrock:us-west-2:<account-id>:knowledge-base/<kb-id>"
+}
+```
+
+**bedrock-agentcore:ListEvents（Memory用）**
+```json
+{
+    "Effect": "Allow",
+    "Action": "bedrock-agentcore:ListEvents",
+    "Resource": "*"
+}
+```
+
+**bedrock:InvokeModel（LLM呼び出し用）**
+```json
+{
+    "Effect": "Allow",
+    "Action": "bedrock:InvokeModel*",
+    "Resource": "arn:aws:bedrock:*::foundation-model/*"
+}
+```
+
+### MCP stdio_client エラー
+
+`StdioServerParameters` を使用して正しく初期化：
+
+```python
+from mcp import stdio_client, StdioServerParameters
+
+mcp_client = MCPClient(lambda: stdio_client(StdioServerParameters(
+    command="uvx",
+    args=["your-mcp-package"],
+    env=os.environ.copy()
+)))
 ```
 
 ### ECR push が失敗する
 
 ```bash
 # 再ログイン
-aws ecr get-login-password --region us-west-2 --profile sandbox | \
+aws ecr get-login-password --region us-west-2 --profile <your-profile> | \
   docker login --username AWS --password-stdin \
-  715841358122.dkr.ecr.us-west-2.amazonaws.com
+  <your-account-id>.dkr.ecr.us-west-2.amazonaws.com
 ```
 
-### AgentCore Runtime が FAILED になる
+### AgentCore Runtime更新時のIAMロール検証エラー
 
-1. CloudWatch Logs でエラーを確認
-2. ECRイメージのアーキテクチャが ARM64 か確認
-3. 必要なIAMロールが付与されているか確認
+```
+ValidationException: Role validation failed for 'arn:aws:iam::xxx:role/...'
+Please verify that the role exists and its trust policy allows assumption by this service
+```
 
-### 認証エラー（403）
+**原因**: `update-agent-runtime` コマンドで指定した `--role-arn` が、実際にRuntimeに設定されているロールと異なる。
 
-`--authorizer-configuration` を指定せずにデプロイした場合に発生。
-Step 3.2 の認証設定を再実行。
+**解決方法**: 現在のRuntime情報を取得して、正しい `roleArn` を確認：
+
+```bash
+aws bedrock-agentcore-control get-agent-runtime \
+  --agent-runtime-id <runtime-id> \
+  --region us-west-2 \
+  --profile <your-profile>
+```
+
+出力から `roleArn` の値をコピーし、`update-agent-runtime` コマンドの `--role-arn` に指定する。
+
+> **Note**: AWSコンソールで作成したRuntimeは `AmazonBedrockAgentCoreRuntimeDefaultServiceRole-xxxxx` のような自動生成ロールが割り当てられていることが多い。
+
+### Strands Agentsのストリーミングイベント
+
+**重要**: Strandsの `agent.stream_async(prompt)` から返されるイベントは、`agent` オブジェクトへの参照などPythonオブジェクトを含むため、**そのまま `yield event` すると文字列化されてしまう**。
+
+BedrockAgentCoreAppでは、イベントをJSON化可能な辞書に変換してからyieldする必要がある：
+
+```python
+def convert_event_to_dict(event) -> dict:
+    """Strandsのイベントオブジェクトを JSON化可能な辞書に変換"""
+    result = {}
+
+    if hasattr(event, 'get'):
+        # テキストデータ
+        if event.get('data'):
+            result['data'] = event.get('data')
+        if event.get('delta') and isinstance(event.get('delta'), dict):
+            delta_text = event.get('delta', {}).get('text')
+            if delta_text:
+                result['delta'] = {'text': delta_text}
+
+        # ツール使用イベント
+        if event.get('tool_use'):
+            tool_use = event.get('tool_use')
+            result['type'] = 'tool_use'
+            result['tool_use'] = {
+                'name': getattr(tool_use, 'name', None) or (tool_use.get('name') if hasattr(tool_use, 'get') else None),
+                'id': getattr(tool_use, 'id', None) or (tool_use.get('id') if hasattr(tool_use, 'get') else None),
+            }
+
+        # ツール結果イベント
+        if event.get('tool_result'):
+            result['type'] = 'tool_result'
+            result['tool_result'] = True
+
+    if not result:
+        return None
+    return result
+
+# 使用例
+async for event in agent.stream_async(prompt):
+    converted = convert_event_to_dict(event)
+    if converted:
+        yield converted
+```
+
+フロントエンドで受け取れるイベント：
+
+- `type: "tool_use"` - ツール呼び出し開始（`tool_use.name` でツール名を取得）
+- `type: "tool_result"` - ツール呼び出し完了
+- `data` / `delta.text` - テキストストリーミング
+
+フロントエンドでこれらのイベントを解析して、ツール使用中のUXを表示できる。
+
+### フロントエンドのマークダウン整形
+
+Tailwind CSS v4 では `@plugin` ディレクティブを使用：
+
+```css
+/* index.css */
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+```
+
+```tsx
+// ChatInterface.tsx
+import ReactMarkdown from 'react-markdown'
+
+<div className="prose prose-sm max-w-none">
+  <ReactMarkdown>{message.content}</ReactMarkdown>
+</div>
+```
 
 ---
 
@@ -251,27 +347,11 @@ Step 3.2 の認証設定を再実行。
 
 ### バックエンド更新
 
-```bash
-# 1. ECRログイン
-aws ecr get-login-password --region us-west-2 --profile sandbox | \
-  docker login --username AWS --password-stdin \
-  715841358122.dkr.ecr.us-west-2.amazonaws.com
+1. ECRログイン
+2. Docker ビルド & プッシュ
+3. AgentCore Runtime 更新（全パラメータ必須）
 
-# 2. ビルド & プッシュ
-docker buildx build \
-  --platform linux/arm64 \
-  -t 715841358122.dkr.ecr.us-west-2.amazonaws.com/reinvent-concierge:latest \
-  -f backend/Dockerfile \
-  backend/ \
-  --push
-
-# 3. AgentCore Runtime 更新
-aws bedrock-agentcore-control update-agent-runtime \
-  --agent-runtime-id <runtime-id> \
-  --agent-runtime-artifact containerConfiguration={containerUri=715841358122.dkr.ecr.us-west-2.amazonaws.com/reinvent-concierge:latest} \
-  --region us-west-2 \
-  --profile sandbox
-```
+> 具体的なコマンドは `docs/credentials.md` を参照
 
 ### フロントエンド更新
 

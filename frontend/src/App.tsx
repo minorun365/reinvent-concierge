@@ -18,7 +18,16 @@ const amplifyConfig = {
 
 Amplify.configure(amplifyConfig)
 
-function App() {
+// メールアドレスをマスク（@より左側を***に）
+function maskEmail(email: string | undefined): string {
+  if (!email) return ''
+  const atIndex = email.indexOf('@')
+  if (atIndex === -1) return '***'
+  return '***' + email.slice(atIndex)
+}
+
+// ログイン済みユーザー用のチャットコンテナ
+function AuthenticatedChat({ user, signOut }: { user: any; signOut?: () => void }) {
   const [sessionId] = useState(() => crypto.randomUUID())
   const [accessToken, setAccessToken] = useState<string>('')
 
@@ -37,8 +46,29 @@ function App() {
     }
 
     getToken()
-  }, [])
+  }, [user]) // userが変わった時に再取得
 
+  return (
+    <div className="h-screen flex flex-col">
+      {/* ユーザー情報バー */}
+      <div className="bg-violet-950 text-white px-4 py-2 flex justify-between items-center text-sm">
+        <span>ログイン中: {maskEmail(user?.signInDetails?.loginId)}</span>
+        <button
+          onClick={signOut}
+          className="px-3 py-1 bg-violet-800 hover:bg-violet-700 rounded transition-colors"
+        >
+          ログアウト
+        </button>
+      </div>
+      {/* チャットインターフェース */}
+      <div className="flex-1">
+        <ChatInterface sessionId={sessionId} accessToken={accessToken} />
+      </div>
+    </div>
+  )
+}
+
+function App() {
   return (
     <Authenticator
       loginMechanisms={['email']}
@@ -71,22 +101,7 @@ function App() {
       }}
     >
       {({ signOut, user }) => (
-        <div className="h-screen flex flex-col">
-          {/* ユーザー情報バー */}
-          <div className="bg-gray-800 text-white px-4 py-2 flex justify-between items-center text-sm">
-            <span>ログイン中: {user?.signInDetails?.loginId}</span>
-            <button
-              onClick={signOut}
-              className="px-3 py-1 bg-gray-600 hover:bg-gray-700 rounded transition-colors"
-            >
-              ログアウト
-            </button>
-          </div>
-          {/* チャットインターフェース */}
-          <div className="flex-1">
-            <ChatInterface sessionId={sessionId} accessToken={accessToken} />
-          </div>
-        </div>
+        <AuthenticatedChat user={user} signOut={signOut} />
       )}
     </Authenticator>
   )
