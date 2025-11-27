@@ -215,22 +215,38 @@ aws amplify update-app \
 
 設定後、再デプロイが必要。
 
-### Amplify UI テーマカラーのカスタマイズ（試行錯誤中）
+### Amplify UI テーマカラーのカスタマイズ
 
-デフォルトのコバルトブルーをバイオレット系に変更する試み：
+デフォルトのコバルトブルーをバイオレット系に変更：
 
 ```css
 /* index.css */
 [data-amplify-authenticator] {
+  --amplify-colors-primary-10: #f5f3ff;
+  --amplify-colors-primary-20: #ede9fe;
+  --amplify-colors-primary-40: #c4b5fd;
+  --amplify-colors-primary-60: #a78bfa;
   --amplify-colors-primary-80: #6d28d9;
+  --amplify-colors-primary-90: #5b21b6;
+  --amplify-colors-primary-100: #4c1d95;
   --amplify-components-button-primary-background-color: #6d28d9;
   --amplify-components-button-primary-hover-background-color: #5b21b6;
-  /* ... */
+  --amplify-components-button-primary-focus-background-color: #5b21b6;
+  --amplify-components-button-primary-active-background-color: #4c1d95;
+  --amplify-components-button-link-color: #7c3aed;
+  --amplify-components-button-link-hover-color: #6d28d9;
+  --amplify-components-tabs-item-active-color: #6d28d9;
+  --amplify-components-tabs-item-active-border-color: #6d28d9;
+  --amplify-components-tabs-item-focus-color: #6d28d9;
+  --amplify-components-tabs-item-hover-color: #7c3aed;
+  --amplify-components-fieldcontrol-focus-border-color: #7c3aed;
 }
 ```
 
-**現状**: CSS変数を設定しても反映されない場合がある。
-**調査中**: セレクタの詳細度、Tailwind CSSとの競合、または変数名の違いの可能性。
+**ポイント**:
+- セレクタは `[data-amplify-authenticator]` を使用（`:root` より詳細度が高い）
+- `--amplify-colors-primary-*` でベースカラーを定義
+- 各コンポーネント（ボタン、タブ、入力フィールド）の色も個別に設定
 
 参考: [Amplify UI CSS Variables](https://ui.docs.amplify.aws/react/theming/css-variables)
 
