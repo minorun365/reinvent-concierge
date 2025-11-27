@@ -6,8 +6,11 @@ WORKDIR /app
 # アプリケーションファイルをコピー
 COPY pyproject.toml main.py ./
 
+# 依存関係をインストール（opentelemetry-instrumentコマンドを使うため）
+RUN uv sync
+
 # AgentCore Runtimeが使用するポート
 EXPOSE 8080
 
-# uv runで直接実行（依存関係は自動インストール）
-CMD ["uv", "run", "python", "main.py"]
+# opentelemetry-instrument経由で実行（Observability有効化）
+CMD ["uv", "run", "opentelemetry-instrument", "python", "-u", "main.py"]

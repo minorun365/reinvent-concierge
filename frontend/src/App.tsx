@@ -99,6 +99,29 @@ function App() {
           },
         },
       }}
+      components={{
+        Header() {
+          return (
+            <div className="text-center py-4">
+              <h1 className="text-2xl font-bold text-violet-900">
+                re:Invent 2025 コンシェルジュ
+              </h1>
+              <p className="text-sm text-gray-600 mt-1">（非公式）</p>
+            </div>
+          )
+        },
+        Footer() {
+          return (
+            <div className="text-center py-3 px-4">
+              <p className="text-xs text-gray-500 leading-relaxed">
+                ※ 登録されたメールアドレスは認証目的でのみ使用します。
+                <br />
+                第三者への提供や広告配信には使用しません。
+              </p>
+            </div>
+          )
+        },
+      }}
     >
       {({ signOut, user }) => (
         <AuthenticatedChat user={user} signOut={signOut} />
