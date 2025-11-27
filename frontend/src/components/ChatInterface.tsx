@@ -286,7 +286,7 @@ export function ChatInterface({ sessionId, accessToken }: ChatInterfaceProps) {
       {/* ヘッダー */}
       <header className="bg-violet-900 text-white p-4 shadow-md">
         <h1 className="text-xl font-bold">re:Invent 2025 コンシェルジュ（非公式）</h1>
-        <p className="text-sm opacity-90">AWS re:Invent 2025 についてなんでも聞いてね！</p>
+        <p className="text-sm opacity-90">みのるんがStrands & AgentCore & Amplifyで構築しています。</p>
       </header>
 
       {/* メッセージエリア */}
