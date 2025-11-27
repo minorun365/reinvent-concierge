@@ -113,6 +113,26 @@ agent = Agent(
 
 ## Observability
 
+CloudWatch GenAI Observability でエージェントのトレースを確認可能。
+
+### 前提条件
+
+1. **CloudWatch Transaction Search を有効化**（アカウントごとに1回）
+   - CloudWatch コンソール → Application Signals → Transaction Search
+   - 有効化後、約10分でトレースが検索可能に
+
+2. **必要なパッケージ**
+
+```toml
+# pyproject.toml
+dependencies = [
+    "strands-agents[otel]>=0.1.0",      # Strands がトレースを生成
+    "aws-opentelemetry-distro>=0.10.1", # CloudWatch に送信
+]
+```
+
+### Agent に trace_attributes を設定
+
 ```python
 agent = Agent(
     model=bedrock_model,
@@ -124,24 +144,39 @@ agent = Agent(
 )
 ```
 
-CloudWatch GenAI Observability でトレース確認可能。
+### 確認方法
+
+CloudWatch コンソール → GenAI Observability → Bedrock AgentCore タブ
+
+- **Agents View**: エージェント一覧とメトリクス
+- **Sessions View**: セッション一覧（session.id でフィルタ可能）
+- **Traces View**: トレース詳細（タイムライン、ツール呼び出し）
 
 ---
 
 ## Dockerfile
 
+**重要**: Observability を有効にするには `opentelemetry-instrument` 経由で実行する必要がある。
+
 ```dockerfile
 FROM --platform=linux/arm64 ghcr.io/astral-sh/uv:python3.11-bookworm-slim
 WORKDIR /app
 COPY pyproject.toml main.py ./
+
+# 依存関係をインストール（opentelemetry-instrument を使うため）
+RUN uv sync
+
 EXPOSE 8080
-CMD ["uv", "run", "python", "main.py"]
+
+# opentelemetry-instrument 経由で実行（Observability 有効化）
+CMD ["uv", "run", "opentelemetry-instrument", "python", "-u", "main.py"]
 ```
 
 **必須要件**:
 - プラットフォーム: `linux/arm64`
 - ポート: 8080
 - エンドポイント: `/invocations`, `/ping`
+- **Observability**: `opentelemetry-instrument` で起動
 
 ---
 

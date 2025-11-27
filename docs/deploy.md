@@ -341,6 +341,38 @@ import ReactMarkdown from 'react-markdown'
 </div>
 ```
 
+### Observability（トレース）が表示されない
+
+**原因**: Dockerfile で `opentelemetry-instrument` コマンドを使用していない
+
+**解決方法**:
+
+1. `pyproject.toml` に必要なパッケージを追加：
+
+```toml
+dependencies = [
+    "strands-agents[otel]>=0.1.0",
+    "aws-opentelemetry-distro>=0.10.1",
+]
+```
+
+2. Dockerfile を修正：
+
+```dockerfile
+# 依存関係をインストール
+RUN uv sync
+
+# opentelemetry-instrument 経由で実行
+CMD ["uv", "run", "opentelemetry-instrument", "python", "-u", "main.py"]
+```
+
+3. CloudWatch Transaction Search を有効化（アカウントごとに1回）：
+   - CloudWatch コンソール → Application Signals → Transaction Search
+
+4. 再ビルド & デプロイ
+
+> 詳細は `docs/dev-notes.md` の「AgentCore Observability 設定」セクションを参照
+
 ---
 
 ## 更新時のデプロイ
