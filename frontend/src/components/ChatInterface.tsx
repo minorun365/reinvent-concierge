@@ -325,7 +325,7 @@ export function ChatInterface({ sessionId, accessToken, userEmail }: ChatInterfa
               {/* 思考中スピナー（アシスタントメッセージが空でツール使用中でない場合） */}
               {message.role === 'assistant' && !message.content && !message.isToolUsing && (
                 <div className="flex items-center gap-2 text-gray-600 text-sm">
-                  <span className="inline-block w-4 h-4 border-2 border-gray-400 border-t-transparent border-r-transparent rounded-full animate-spin"></span>
+                  <span className="inline-block w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></span>
                   思考中...
                 </div>
               )}
@@ -336,7 +336,7 @@ export function ChatInterface({ sessionId, accessToken, userEmail }: ChatInterfa
                   {message.toolCompleted ? (
                     <span className="inline-block w-4 h-4 text-green-600">✓</span>
                   ) : (
-                    <span className="inline-block w-4 h-4 border-2 border-violet-600 border-t-transparent border-r-transparent rounded-full animate-spin"></span>
+                    <span className="inline-block w-4 h-4 border-2 border-violet-600 border-t-transparent rounded-full animate-spin"></span>
                   )}
                   🔧 {message.toolName || 'ツール'}{message.toolCompleted ? 'を利用しました' : 'を利用しています...'}
                 </div>
