@@ -169,3 +169,182 @@ CloudWatch コンソール → GenAI Observability → Bedrock AgentCore タブ
 
 - [AgentCore Observability Get Started](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/observability-get-started.html)
 - [Strands Agents Observability](https://strandsagents.com/latest/documentation/docs/user-guide/observability-evaluation/observability/)
+
+---
+
+## Cognito認証UI カスタマイズ
+
+### ログイン画面へのメッセージ追加
+
+Amplify UI の `Authenticator` コンポーネントは `components` prop でヘッダー・フッターをカスタマイズできる：
+
+```tsx
+<Authenticator
+  components={{
+    Header() {
+      return (
+        <div className="text-center py-4">
+          <h1>タイトル</h1>
+          <p>サブタイトル</p>
+        </div>
+      )
+    },
+    Footer() {
+      return (
+        <p>メールアドレスの利用目的など...</p>
+      )
+    },
+  }}
+>
+```
+
+### Amplify環境変数の設定
+
+Amplify Hosting でデプロイしたアプリに環境変数を設定するには：
+
+```bash
+aws amplify update-app \
+  --app-id <app-id> \
+  --environment-variables \
+    VITE_USER_POOL_ID=<user-pool-id>,\
+    VITE_USER_POOL_CLIENT_ID=<client-id>,\
+    VITE_AGENT_RUNTIME_ARN=<arn>,\
+    VITE_AWS_REGION=us-west-2 \
+  --region us-west-2 --profile sandbox
+```
+
+設定後、再デプロイが必要。
+
+### Amplify UI テーマカラーのカスタマイズ（試行錯誤中）
+
+デフォルトのコバルトブルーをバイオレット系に変更する試み：
+
+```css
+/* index.css */
+[data-amplify-authenticator] {
+  --amplify-colors-primary-80: #6d28d9;
+  --amplify-components-button-primary-background-color: #6d28d9;
+  --amplify-components-button-primary-hover-background-color: #5b21b6;
+  /* ... */
+}
+```
+
+**現状**: CSS変数を設定しても反映されない場合がある。
+**調査中**: セレクタの詳細度、Tailwind CSSとの競合、または変数名の違いの可能性。
+
+参考: [Amplify UI CSS Variables](https://ui.docs.amplify.aws/react/theming/css-variables)
+
+---
+
+## iOS Safari 対応
+
+### Dynamic Island / ノッチ対応
+
+iPhone 14 Pro以降の Dynamic Island やノッチに対応するには：
+
+**1. index.html に `viewport-fit=cover` を追加**
+
+```html
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+```
+
+**2. CSS で safe-area-inset を使用**
+
+```css
+/* index.css */
+@supports (padding: max(0px)) {
+  .safe-area-top {
+    padding-top: max(0.5rem, env(safe-area-inset-top));
+  }
+}
+```
+
+**3. ヘッダー要素にクラスを適用**
+
+```tsx
+<div className="safe-area-top bg-violet-950 ...">
+```
+
+### オーバースクロール時の背景色
+
+スマホで画面端をスワイプした時に見える背景色を制御：
+
+```html
+<!-- index.html -->
+<body class="bg-violet-950">
+```
+
+これで上方向にオーバースクロールした時、ヘッダーと同じ色が見える。
+
+---
+
+## スピナーの実装
+
+### CSSボーダースピナーの問題
+
+```css
+/* 一般的なCSSスピナー */
+border-2 border-gray-400 border-t-transparent rounded-full animate-spin
+```
+
+この方法はスマホ（特にiOS Safari）でいびつに見えることがある。
+
+### SVGスピナー（推奨）
+
+デバイス間で一貫した見た目を得るにはSVGを使用：
+
+```tsx
+<svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+</svg>
+```
+
+**利点**:
+- ベクター形式なのでどの解像度でも綺麗
+- 完全な円として描画される
+- デバイス間で一貫した見た目
+
+---
+
+## Observability でユーザー情報を伝播
+
+### baggage ヘッダーの使用
+
+OpenTelemetry の `baggage` ヘッダーを使用して、フロントエンドからバックエンドにユーザー情報を伝播できる：
+
+```tsx
+// ChatInterface.tsx
+const baggageItems: string[] = []
+if (userEmail) {
+  baggageItems.push(`userEmail=${encodeURIComponent(userEmail)}`)
+}
+baggageItems.push(`sessionId=${sessionId}`)
+
+fetch(url, {
+  headers: {
+    'baggage': baggageItems.join(','),
+  },
+})
+```
+
+これにより、CloudWatch トレースでどのユーザーがどのリクエストを発行したか追跡可能。
+
+---
+
+## Favicon設定
+
+Viteプロジェクトでfaviconを設定：
+
+**1. public フォルダに配置**
+
+```bash
+mkdir -p frontend/public
+# 画像をfavicon.icoとして保存
+magick input.png -resize 32x32 frontend/public/favicon.ico
+```
+
+**2. index.html にリンクを追加**
+
+```html
+<link rel="icon" type="image/x-icon" href="/favicon.ico" />

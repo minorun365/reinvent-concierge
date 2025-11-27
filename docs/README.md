@@ -2,6 +2,8 @@
 
 AWS re:Invent 2025 に関する質問に答える AI エージェント・チャットボット
 
+[reinvent.minoruonda.com](https://reinvent.minoruonda.com/)
+
 ## 概要
 
 期間限定のデモアプリとして開発。参加者が re:Invent 2025 のセッション情報や会場情報などを気軽に質問できる。
