@@ -17,27 +17,27 @@ interface ChatInterfaceProps {
   userEmail?: string
 }
 
-// ツール名の日本語表示名マッピング
+// ツール名の日本語表示名マッピング（prefix付き）
 const TOOL_DISPLAY_NAMES: Record<string, string> = {
   // Strands Retrieve
   retrieve: 'Strands Retrieve - みのるん特製ナレッジベース検索ツール',
-  // Tavily MCP
-  tavily_search: 'Tavily MCP - Web検索ツール',
-  tavily_extract: 'Tavily MCP - URL内容抽出ツール',
-  // re:Invent MCP
-  search_sessions: 're:Invent MCP - セッション全文検索',
-  search_services: 're:Invent MCP - AWSサービス検索',
-  get_session_details: 're:Invent MCP - セッション詳細取得',
-  list_categories: 're:Invent MCP - カテゴリ一覧取得',
-  get_sessions_by_service: 're:Invent MCP - サービス別セッション検索',
-  get_sessions_by_level: 're:Invent MCP - 難易度別セッション検索',
-  get_sessions_by_role: 're:Invent MCP - 職種別セッション検索',
-  get_sessions_by_industry: 're:Invent MCP - 業界別セッション検索',
-  get_sessions_by_segment: 're:Invent MCP - セグメント別セッション検索',
-  get_sessions_by_feature: 're:Invent MCP - 形式別セッション検索',
-  get_sessions_by_topic: 're:Invent MCP - トピック別セッション検索',
-  get_sessions_by_area_of_interest: 're:Invent MCP - 興味分野別セッション検索',
-  search_speakers: 're:Invent MCP - スピーカー検索',
+  // Tavily MCP (prefix: tavily___)
+  tavily___TavilySearch: 'Tavily MCP - Web検索ツール',
+  tavily___TavilyExtract: 'Tavily MCP - URL内容抽出ツール',
+  // re:Invent MCP (prefix: reinvent___)
+  reinvent___search_sessions: 're:Invent MCP - セッション全文検索',
+  reinvent___search_services: 're:Invent MCP - AWSサービス検索',
+  reinvent___get_session_details: 're:Invent MCP - セッション詳細取得',
+  reinvent___list_categories: 're:Invent MCP - カテゴリ一覧取得',
+  reinvent___get_sessions_by_service: 're:Invent MCP - サービス別セッション検索',
+  reinvent___get_sessions_by_level: 're:Invent MCP - 難易度別セッション検索',
+  reinvent___get_sessions_by_role: 're:Invent MCP - 職種別セッション検索',
+  reinvent___get_sessions_by_industry: 're:Invent MCP - 業界別セッション検索',
+  reinvent___get_sessions_by_segment: 're:Invent MCP - セグメント別セッション検索',
+  reinvent___get_sessions_by_feature: 're:Invent MCP - 形式別セッション検索',
+  reinvent___get_sessions_by_topic: 're:Invent MCP - トピック別セッション検索',
+  reinvent___get_sessions_by_area_of_interest: 're:Invent MCP - 興味分野別セッション検索',
+  reinvent___search_speakers: 're:Invent MCP - スピーカー検索',
 }
 
 // AgentCore Runtime設定（環境変数必須）

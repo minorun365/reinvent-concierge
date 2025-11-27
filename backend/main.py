@@ -134,22 +134,27 @@ async def invoke_agent(payload, context):
     tools.append(retrieve)
 
     # MCPクライアントのリスト（複数MCPを統合）
-    mcp_clients = []
+    mcp_clients: list[MCPClient] = []
 
-    # 2. Tavily MCP（Web検索）
+    # 2. Tavily MCP（Web検索） - リモートMCP
     if TAVILY_API_KEY:
-        tavily_mcp = MCPClient(lambda: streamablehttp_client(
-            f"https://mcp.tavily.com/mcp/?tavilyApiKey={TAVILY_API_KEY}"
-        ))
+        tavily_mcp = MCPClient(
+            lambda: streamablehttp_client(
+                f"https://mcp.tavily.com/mcp/?tavilyApiKey={TAVILY_API_KEY}"
+            ),
+            prefix="tavily"  # ツール名に接頭辞を付けて衝突回避
+        )
         mcp_clients.append(tavily_mcp)
 
-    # 3. re-invent-2025-mcp（セッション情報）
-    # StdioServerParametersを使ってuvx経由で起動
-    reinvent_mcp = MCPClient(lambda: stdio_client(StdioServerParameters(
-        command="uvx",
-        args=["re-invent-2025-mcp"],
-        env=os.environ.copy()
-    )))
+    # 3. re-invent-2025-mcp（セッション情報） - ローカルMCP (stdio)
+    reinvent_mcp = MCPClient(
+        lambda: stdio_client(StdioServerParameters(
+            command="uvx",
+            args=["re-invent-2025-mcp"],
+            env=os.environ.copy()
+        )),
+        prefix="reinvent"  # ツール名に接頭辞を付けて衝突回避
+    )
     mcp_clients.append(reinvent_mcp)
 
     # SessionManager作成（Memory IDが設定されている場合のみ）
@@ -173,19 +178,20 @@ async def invoke_agent(payload, context):
 
     # MCPクライアントを起動してエージェントを実行
     if mcp_clients:
-        # 複数のMCPクライアントを統合（contextlibのExitStackを使用）
+        # ExitStackで複数withをまとめて扱う
         from contextlib import ExitStack
         with ExitStack() as stack:
-            # すべてのMCPクライアントを起動
-            active_mcps = [stack.enter_context(mcp) for mcp in mcp_clients]
+            mcp_tools = []
 
-            # すべてのMCPからツールを収集
-            all_tools = tools.copy()
-            for mcp in active_mcps:
-                mcp_tools = mcp.list_tools_sync()
-                all_tools.extend(mcp_tools)
+            for client in mcp_clients:
+                # それぞれのMCPクライアントをopen
+                stack.enter_context(client)
+                # 各MCPサーバーからツールを取得して結合
+                mcp_tools.extend(client.list_tools_sync())
 
-            # エージェント作成
+            # すべてのツールをまとめてAgentに渡す
+            all_tools = tools + mcp_tools
+
             agent = Agent(
                 model=bedrock_model,
                 system_prompt=SYSTEM_PROMPT,
@@ -194,11 +200,15 @@ async def invoke_agent(payload, context):
                 trace_attributes=trace_attributes
             )
 
-            # ストリーミングで応答を取得
-            async for event in agent.stream_async(prompt):
-                converted = convert_event(event)
-                if converted:
-                    yield converted
+            try:
+                # ストリーミングで応答を取得
+                async for event in agent.stream_async(prompt):
+                    converted = convert_event(event)
+                    if converted:
+                        yield converted
+            finally:
+                # 明示的にクリーンアップ
+                agent.cleanup()
     else:
         # MCPなしの場合
         agent = Agent(
@@ -209,10 +219,13 @@ async def invoke_agent(payload, context):
             trace_attributes=trace_attributes
         )
 
-        async for event in agent.stream_async(prompt):
-            converted = convert_event(event)
-            if converted:
-                yield converted
+        try:
+            async for event in agent.stream_async(prompt):
+                converted = convert_event(event)
+                if converted:
+                    yield converted
+        finally:
+            agent.cleanup()
 
 
 # APIサーバーを起動
