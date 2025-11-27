@@ -18,6 +18,7 @@ build/
 
 # Credentials (sensitive)
 docs/credentials.md
+docs/q-and-a.md
 
 # IDE
 .vscode/
