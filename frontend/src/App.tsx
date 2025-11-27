@@ -104,9 +104,9 @@ function App() {
           return (
             <div className="text-center py-4">
               <h1 className="text-2xl font-bold text-violet-900">
-                re:Invent 2025 コンシェルジュ
+                re:Invent 2025 コンシェルジュ（非公式）
               </h1>
-              <p className="text-sm text-gray-600 mt-1">（非公式）</p>
+              <p className="text-sm text-gray-600 mt-1">「Create Account」すれば誰でも利用できます！</p>
             </div>
           )
         },
@@ -114,7 +114,7 @@ function App() {
           return (
             <div className="text-center py-3 px-4">
               <p className="text-xs text-gray-500 leading-relaxed">
-                ※ 登録されたメールアドレスは認証目的でのみ使用します。
+                登録されたメールアドレスは認証目的でのみ使用します。
                 <br />
                 第三者への提供や広告配信には使用しません。
               </p>
