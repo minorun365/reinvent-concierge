@@ -1,4 +1,4 @@
-# re:Invent 2025 コンシェルジュ
+# reInventエージェント
 
 AWS re:Invent 2025 に関する質問に答える AI エージェント・チャットボット
 
