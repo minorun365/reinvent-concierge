@@ -4,6 +4,8 @@ AWS re:Invent 2025 に関する質問に答える AI エージェント・チャ
 
 [reinvent.minoruonda.com](https://reinvent.minoruonda.com/)
 
+<img width="906" height="713" alt="スクリーンショット 2025-11-28 10 55 23" src="https://github.com/user-attachments/assets/73803e2d-db44-484f-8df9-099c0d77a479" />
+
 ## 概要
 
 期間限定のデモアプリとして開発。参加者が re:Invent 2025 のセッション情報や会場情報などを気軽に質問できる。
