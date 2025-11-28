@@ -108,7 +108,7 @@ function App() {
           return (
             <div className="text-center py-4">
               <h1 className="text-2xl font-bold text-white">
-                re:Invent 2025 コンシェルジュ（非公式）
+                #reInventエージェント（非公式）
               </h1>
               <p className="text-sm text-violet-200 mt-1">「Create Account」すれば誰でも利用できます！</p>
             </div>

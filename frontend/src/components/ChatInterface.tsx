@@ -309,7 +309,7 @@ export function ChatInterface({ sessionId, accessToken, userEmail }: ChatInterfa
     <div className="flex flex-col h-full bg-gray-50">
       {/* ヘッダー */}
       <header className="bg-violet-900 text-white p-4 shadow-md">
-        <h1 className="text-xl font-bold">re:Invent 2025 コンシェルジュ（非公式）</h1>
+        <h1 className="text-xl font-bold">#reInventエージェント（非公式）</h1>
         <p className="text-sm opacity-90">みのるんがStrands & AgentCore & Amplifyで構築しています。</p>
       </header>
 
