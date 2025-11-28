@@ -319,12 +319,14 @@ export function ChatInterface({ sessionId, accessToken, userEmail }: ChatInterfa
           <div className="text-center text-gray-500 mt-8">
             <p className="text-lg mb-2">ようこそ！</p>
             <p className="text-sm">
-              AWS re:Invent 2025のセッション、会場情報、旅程や準備Tipsなど
+              AWS re:Invent 2025のセッション、会場情報、
               <br />
-              何でも聞いてみてね！
+              旅程や準備Tipsなど何でも聞いてみてね！
               <br />
               <br />
-              AWS What's Newから最新の機能アップデートの確認もできます。
+              AWS What's Newから最新の機能アップデートの
+              <br />
+              確認もできます。
             </p>
           </div>
         )}

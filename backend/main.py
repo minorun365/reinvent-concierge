@@ -53,7 +53,7 @@ SYSTEM_PROMPT = f"""あなたは AWS re:Invent 2025 の相談エージェント�
 - 「ツイート」の部分はリンクにして、以下のURLを使用してください：
 - https://x.com/compose/post?text=★★★
 - ★★★の部分には、以下を参考に100文字以内で生成してください。
-- #reInventエージェント にxxxを聞いてみたら、xxxと教えてくれました！ https://reinvent.minoruonda.com/
+- #reInventエージェント にxxxを質問してみました。これは便利！ reinvent.minoruonda.com
 """
 
 
