@@ -22,21 +22,23 @@ const TOOL_DISPLAY_NAMES: Record<string, string> = {
   // Strands Retrieve
   retrieve: 'Strands Retrieve - みのるん特製ナレッジベース検索ツール',
   // Tavily Web検索（@toolで定義）
-  tavily_search: 'Tavily Web検索',
+  tavily_search: 'Tavily Web検索ツール',
   // re:Invent MCP
-  search_sessions: 're:Invent MCP - セッション全文検索',
-  search_services: 're:Invent MCP - AWSサービス検索',
-  get_session_details: 're:Invent MCP - セッション詳細取得',
-  list_categories: 're:Invent MCP - カテゴリ一覧取得',
-  get_sessions_by_service: 're:Invent MCP - サービス別セッション検索',
-  get_sessions_by_level: 're:Invent MCP - 難易度別セッション検索',
-  get_sessions_by_role: 're:Invent MCP - 職種別セッション検索',
-  get_sessions_by_industry: 're:Invent MCP - 業界別セッション検索',
-  get_sessions_by_segment: 're:Invent MCP - セグメント別セッション検索',
-  get_sessions_by_feature: 're:Invent MCP - 形式別セッション検索',
-  get_sessions_by_topic: 're:Invent MCP - トピック別セッション検索',
-  get_sessions_by_area_of_interest: 're:Invent MCP - 興味分野別セッション検索',
-  search_speakers: 're:Invent MCP - スピーカー検索',
+  search_sessions: 're:Invent MCP - セッション全文検索ツール',
+  search_services: 're:Invent MCP - AWSサービス検索ツール',
+  get_session_details: 're:Invent MCP - セッション詳細取得ツール',
+  list_categories: 're:Invent MCP - カテゴリ一覧取得ツール',
+  get_sessions_by_service: 're:Invent MCP - サービス別セッション検索ツール',
+  get_sessions_by_level: 're:Invent MCP - 難易度別セッション検索ツール',
+  get_sessions_by_role: 're:Invent MCP - 職種別セッション検索ツール',
+  get_sessions_by_industry: 're:Invent MCP - 業界別セッション検索ツール',
+  get_sessions_by_segment: 're:Invent MCP - セグメント別セッション検索ツール',
+  get_sessions_by_feature: 're:Invent MCP - 形式別セッション検索ツール',
+  get_sessions_by_topic: 're:Invent MCP - トピック別セッション検索ツール',
+  get_sessions_by_area_of_interest: 're:Invent MCP - 興味分野別セッション検索ツール',
+  search_speakers: 're:Invent MCP - スピーカー検索ツール',
+  // AWS What's New
+  search_aws_updates: 'AWS What\'s New - AWSアップデート検索ツール',
 }
 
 // AgentCore Runtime設定（環境変数必須）
@@ -317,9 +319,12 @@ export function ChatInterface({ sessionId, accessToken, userEmail }: ChatInterfa
           <div className="text-center text-gray-500 mt-8">
             <p className="text-lg mb-2">ようこそ！</p>
             <p className="text-sm">
-              AWS re:Invent 2025のセッション、スケジュール、会場情報など
+              AWS re:Invent 2025のセッション、会場情報、旅程や準備Tipsなど
               <br />
-              何でもお気軽にお聞きください。
+              何でも聞いてみてね！
+              <br />
+              <br />
+              AWS What's Newから最新の機能アップデートの確認もできます。
             </p>
           </div>
         )}

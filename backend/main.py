@@ -7,6 +7,7 @@ AgentCore Runtime にデプロイして使用。
 
 import os
 import boto3
+import feedparser
 from strands import Agent, tool
 from strands.models import BedrockModel
 from strands.tools.mcp import MCPClient
@@ -38,10 +39,12 @@ SYSTEM_PROMPT = f"""あなたは AWS re:Invent 2025 のコンシェルジュで�
 1. retrieve - Bedrockナレッジベースから re:Invent 関連の情報を検索（knowledgeBaseId: {KNOWLEDGE_BASE_ID}）
 2. re:Invent 2025 セッション検索ツール（search_sessions, get_session_details など）
 3. tavily_search - Web検索で最新情報を取得
+4. search_aws_updates - AWS What's New RSSフィードからキーワード検索（AWSの最新アップデート情報）
 
 回答時のガイドライン：
 - まず retrieve ツールで検索（knowledgeBaseIdは必ず "{KNOWLEDGE_BASE_ID}" を指定）
 - セッションやキーノート、イベントの情報を聞かれたら、re:Inventセッション検索ツールを活用
+- AWSサービスの最新アップデートや新機能の質問には search_aws_updates を使用
 - 最新のニュースや公式サイトにない情報は tavily_search で検索
 - 十分な情報が得られないときは、同じツールで別の検索をリトライしたり、複数のツール利用を試すなど試行錯誤してください
 - 最終的に、なるべく簡潔で分かりやすい日本語で回答
@@ -63,6 +66,57 @@ def tavily_search(query: str) -> dict:
         return {"error": "TAVILY_API_KEY is not set"}
     tavily = TavilyClient(api_key=TAVILY_API_KEY)
     return tavily.search(query)
+
+
+# AWS What's New 検索ツール
+AWS_WHATS_NEW_RSS_URL = "https://aws.amazon.com/about-aws/whats-new/recent/feed/"
+
+
+@tool
+def search_aws_updates(keyword: str, max_results: int = 10) -> list:
+    """AWS What's New RSSフィードからキーワード検索します。
+
+    タイトルだけでなく、アップデート内容（summary）からもキーワードを検索します。
+
+    Args:
+        keyword: 検索キーワード（サービス名、機能名など）
+        max_results: 取得する最大件数（デフォルト5件、最大10件）
+
+    Returns:
+        マッチしたアップデート情報のリスト（日付、タイトル、概要、リンク）
+    """
+    # 最大件数を制限
+    max_results = min(max_results, 20)
+
+    # RSSフィードをパース
+    feed = feedparser.parse(AWS_WHATS_NEW_RSS_URL)
+
+    if feed.bozo:
+        return [{"error": "RSSフィードの取得に失敗しました"}]
+
+    results = []
+    keyword_lower = keyword.lower()
+
+    for entry in feed.entries:
+        title = entry.get("title", "")
+        summary = entry.get("summary", "")
+
+        # タイトルまたはサマリーにキーワードが含まれているかチェック
+        if keyword_lower in title.lower() or keyword_lower in summary.lower():
+            results.append({
+                "published": entry.get("published", "N/A"),
+                "title": title,
+                "summary": summary[:300] + "..." if len(summary) > 300 else summary,
+                "link": entry.get("link", "")
+            })
+
+            if len(results) >= max_results:
+                break
+
+    if not results:
+        return [{"message": f"'{keyword}' に関するアップデートは見つかりませんでした"}]
+
+    return results
 
 
 def convert_event(event) -> dict | None:
@@ -151,7 +205,10 @@ async def invoke_agent(payload, context):
     # 2. Tavily Web検索（@toolで定義）
     tools.append(tavily_search)
 
-    # 3. re-invent-2025-mcp（セッション情報） - MCPクライアント
+    # 3. AWS What's New 検索（@toolで定義）
+    tools.append(search_aws_updates)
+
+    # 4. re-invent-2025-mcp（セッション情報） - MCPクライアント
     reinvent_mcp = MCPClient(
         lambda: stdio_client(StdioServerParameters(
             command="uvx",
