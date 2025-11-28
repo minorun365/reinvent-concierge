@@ -110,7 +110,10 @@ function App() {
               <h1 className="text-2xl font-bold text-white">
                 #reInventエージェント（非公式）
               </h1>
-              <p className="text-sm text-violet-200 mt-1">「Create Account」すれば誰でも利用できます！</p>
+              <p className="text-sm text-violet-200 mt-1">「Create Account」すれば誰でも利用できます！
+                <br />
+                （新規ユーザーが1日50人を超えるとエラーになります。翌日までお待ちください）
+              </p>
             </div>
           )
         },
