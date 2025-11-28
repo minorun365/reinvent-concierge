@@ -324,9 +324,7 @@ export function ChatInterface({ sessionId, accessToken, userEmail }: ChatInterfa
               旅程や準備Tipsなど何でも聞いてみてね！
               <br />
               <br />
-              AWS What's Newから最新の機能アップデートの
-              <br />
-              確認もできます。
+              最近発表された新機能の解説もできます。
             </p>
           </div>
         )}
