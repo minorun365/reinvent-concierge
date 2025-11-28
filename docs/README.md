@@ -26,6 +26,7 @@ AWS re:Invent 2025 に関する質問に答える AI エージェント・チャ
 1. **retrieve** - Bedrock ナレッジベース検索（re:Invent 公式情報）
 2. **Tavily MCP** - Web検索（最新ニュース）
 3. **re-invent-2025-mcp** - セッション・スピーカー情報検索
+4. **AWS What's New** - AWS最新アップデート検索（RSSより）
 
 ## ドキュメント一覧
 
