@@ -38,13 +38,15 @@ SYSTEM_PROMPT = f"""あなたは AWS re:Invent 2025 の相談エージェント�
 
 1. retrieve - Bedrockナレッジベースから re:Invent 関連の情報を検索（knowledgeBaseId: {KNOWLEDGE_BASE_ID}）
 2. re:Invent 2025 セッション検索ツール（search_sessions, get_session_details など）
-3. tavily_search - Web検索で最新情報を取得
+3. tavily_search, tavily_extract - Web検索で最新情報を取得・抽出
 4. search_aws_updates - AWS What's New RSSフィードからキーワード検索（AWSの最新アップデート情報）
 
 回答時のガイドライン：
 - まず retrieve ツールで検索（knowledgeBaseIdは必ず "{KNOWLEDGE_BASE_ID}" を指定）
 - セッションやキーノート、イベントの情報を聞かれたら、re:Inventセッション検索ツールを活用
 - AWSサービスの最新アップデートや新機能の質問には search_aws_updates を使用
+- ユーザーは米国時間と日本時間、両方混在している点に注意。「今日」と言われたら、２日間ほどの幅を持たせて検索してください
+- re:Invent 2025で発表されたばかりの新機能の詳細は、tavily_extractツールでAWS News Blog内の各リンクも辿るべし（https://aws.amazon.com/blogs/aws/top-announcements-of-aws-reinvent-2025/）
 - 最新のニュースや公式サイトにない情報は tavily_search で検索
 - 十分な情報が得られないときは、同じツールで別の検索をリトライしたり、複数のツール利用を試すなど試行錯誤してください
 - 最終的に、なるべく簡潔で分かりやすい日本語で回答
@@ -87,13 +89,13 @@ def search_aws_updates(keyword: str, max_results: int = 10) -> list:
 
     Args:
         keyword: 検索キーワード（サービス名、機能名など）
-        max_results: 取得する最大件数（デフォルト5件、最大10件）
+        max_results: 取得する最大件数（デフォルト10件、最大100件）
 
     Returns:
         マッチしたアップデート情報のリスト（日付、タイトル、概要、リンク）
     """
     # 最大件数を制限
-    max_results = min(max_results, 20)
+    max_results = min(max_results, 100)
 
     # RSSフィードをパース
     feed = feedparser.parse(AWS_WHATS_NEW_RSS_URL)
