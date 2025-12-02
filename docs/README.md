@@ -4,7 +4,8 @@ AWS re:Invent 2025 に関する質問に答える AI エージェント・チャ
 
 [reinvent.minoruonda.com](https://reinvent.minoruonda.com/)
 
-<img width="906" height="713" alt="スクリーンショット 2025-11-28 10 55 23" src="https://github.com/user-attachments/assets/73803e2d-db44-484f-8df9-099c0d77a479" />
+<img width="948" height="867" alt="アプリ画面" src="https://github.com/user-attachments/assets/36ffbbb7-6aa5-4545-bfbe-1f3adb2db4ba" />
+
 
 ## 概要
 
@@ -17,6 +18,7 @@ AWS re:Invent 2025 に関する質問に答える AI エージェント・チャ
 | フロントエンド | Vite + React + TypeScript + Tailwind CSS v4 |
 | ホスティング | AWS Amplify Hosting |
 | 認証 | Amazon Cognito（JWT認証） |
+
 | バックエンド | Strands Agents + BedrockAgentCoreApp |
 | ランタイム | Amazon Bedrock AgentCore Runtime |
 | LLM | Claude Sonnet 4.5（Cross-Region Inference） |
