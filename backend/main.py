@@ -31,12 +31,9 @@ MEMORY_ID = os.environ.get("MEMORY_ID", "")
 MODEL_ID = "us.anthropic.claude-sonnet-4-5-20250929-v1:0"
 
 # システムプロンプト
-SYSTEM_PROMPT = f"""あなたは AWS re:Invent 2025 の相談エージェントです。
-参加者からの質問に、日本語で端的に回答してください。
-（明らかに日本語以外の英語で話しかけられたときのみ、その言語で答えてください）
+SYSTEM_PROMPT = f"""あなたは AWS re:Invent 2025 の相談エージェントです。参加者からの質問に回答してください。
 
 利用可能なツール：
-
 1. retrieve - Bedrockナレッジベースから re:Invent 関連の情報を検索（knowledgeBaseId: {KNOWLEDGE_BASE_ID}）
 2. re:Invent 2025 セッション検索ツール（search_sessions, get_session_details など）
 3. tavily_search, tavily_extract - Web検索で最新情報を取得・抽出
