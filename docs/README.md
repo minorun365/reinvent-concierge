@@ -59,39 +59,3 @@ reinvent-concierge/
 ├── docs/                    # ドキュメント
 └── reference/               # 参考コード（gitignore済み）
 ```
-
-## クイックスタート
-
-### ローカル開発
-
-```bash
-# AWS SSO ログイン
-aws sso login --profile=sandbox
-
-# フロントエンド起動
-cd frontend
-npm install
-npm run dev
-```
-
-### デプロイ
-
-```bash
-# バックエンド更新
-cd backend
-docker build --platform linux/arm64 -t reinvent-concierge:latest .
-# → ECRプッシュ → AgentCore Runtime更新
-# 詳細は docs/deploy.md を参照
-
-# フロントエンド更新
-git push origin main  # Amplify Hostingで自動デプロイ
-```
-
-## URL
-
-- **本番**: https://d84l1y8p4kdic.cloudfront.net
-- **GitHub**: https://github.com/minorun365/reinvent-concierge (private)
-
-## 開発者
-
-みのるん（[@minorun365](https://github.com/minorun365)）
