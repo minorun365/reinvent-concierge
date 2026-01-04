@@ -27,8 +27,8 @@ TAVILY_API_KEY = os.environ.get("TAVILY_API_KEY", "")
 KNOWLEDGE_BASE_ID = os.environ.get("KNOWLEDGE_BASE_ID", "")
 MEMORY_ID = os.environ.get("MEMORY_ID", "")
 
-# モデルID（Claude Sonnet 4.5 Cross-Region Inference Profile）
-MODEL_ID = "us.anthropic.claude-sonnet-4-5-20250929-v1:0"
+# モデルID（Claude Sonnet）
+MODEL_ID = "anthropic.claude-3-5-sonnet-20240620-v1:0"
 
 # システムプロンプト
 SYSTEM_PROMPT = f"""あなたは AWS re:Invent 2025 の相談エージェントです。参加者からの質問に回答してください。
