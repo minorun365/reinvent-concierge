@@ -233,6 +233,15 @@ AgentCore Runtimeのサービスロールに必要な権限を追加：
 }
 ```
 
+**bedrock-agentcore:CreateEvent（Memory用）**
+```json
+{
+    "Effect": "Allow",
+    "Action": "bedrock-agentcore:CreateEvent",
+    "Resource": "arn:aws:bedrock-agentcore:ap-northeast-1:<account-id>:memory/<memory-id>"
+}
+```
+
 ### MCP stdio_client エラー
 
 `StdioServerParameters` を使用して正しく初期化：
