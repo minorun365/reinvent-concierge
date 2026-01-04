@@ -238,7 +238,7 @@ AgentCore Runtimeのサービスロールに必要な権限を追加：
 {
     "Effect": "Allow",
     "Action": "bedrock-agentcore:CreateEvent",
-    "Resource": "arn:aws:bedrock-agentcore:ap-northeast-1:<account-id>:memory/<memory-id>"
+    "Resource": "arn:aws:bedrock-agentcore:us-west-2:<account-id>:memory/<memory-id>"
 }
 ```
 
