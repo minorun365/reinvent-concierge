@@ -2,6 +2,8 @@
 
 AWS re:Invent 2025 に関する質問に答える AI エージェント・チャットボット
 
+re:Invent 2026 向けの後継は [みのるんエージェント](https://github.com/minorun365/minorun-agent) です（ https://agent.minoruonda.com ）。
+
 [reinvent.minoruonda.com](https://reinvent.minoruonda.com/)
 
 <img width="948" height="867" alt="アプリ画面" src="https://github.com/user-attachments/assets/36ffbbb7-6aa5-4545-bfbe-1f3adb2db4ba" />
