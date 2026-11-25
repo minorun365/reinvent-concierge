@@ -19,9 +19,9 @@ app.run()
 ```
 
 ### ポイント
-- `@app.entrypoint` デコレータでエントリーポイントを定義
-- `app.run()` でサーバー起動（ポート8080）
-- `/invocations` と `/ping` エンドポイントは自動作成
+- `@app.entrypoint` デコレータでエントリーポイントを定義する
+- `app.run()` でサーバーがポート8080で起動する
+- `/invocations` と `/ping` エンドポイントは自動で作成される
 
 ---
 
@@ -41,8 +41,8 @@ bedrock_model = BedrockModel(
 
 | 項目 | 説明 |
 |------|------|
-| `model_id` | `us.`プレフィックス = Cross-Region Inference Profile |
-| `boto_session` | リージョンを明示的に指定 |
+| `model_id` | `us.` プレフィックスは Cross-Region Inference Profile を示す |
+| `boto_session` | リージョンを明示的に指定する |
 
 ---
 
@@ -113,15 +113,15 @@ agent = Agent(
 
 ## Observability
 
-CloudWatch GenAI Observability でエージェントのトレースを確認可能。
+CloudWatch GenAI Observability でエージェントのトレースを確認できる。
 
 ### 前提条件
 
-1. **CloudWatch Transaction Search を有効化**（アカウントごとに1回）
+1. アカウントごとに1回、CloudWatch Transaction Search を有効にする
    - CloudWatch コンソール → Application Signals → Transaction Search
-   - 有効化後、約10分でトレースが検索可能に
+   - 有効化してから約10分でトレースを検索できるようになる
 
-2. **必要なパッケージ**
+2. 必要なパッケージ
 
 ```toml
 # pyproject.toml
@@ -148,15 +148,15 @@ agent = Agent(
 
 CloudWatch コンソール → GenAI Observability → Bedrock AgentCore タブ
 
-- **Agents View**: エージェント一覧とメトリクス
-- **Sessions View**: セッション一覧（session.id でフィルタ可能）
-- **Traces View**: トレース詳細（タイムライン、ツール呼び出し）
+- Agents View: エージェント一覧とメトリクスを確認できる
+- Sessions View: セッション一覧が表示され、session.id でフィルタできる
+- Traces View: トレース詳細としてタイムラインやツール呼び出しが見られる
 
 ---
 
 ## Dockerfile
 
-**重要**: Observability を有効にするには `opentelemetry-instrument` 経由で実行する必要がある。
+Observability を有効にするには、必ず `opentelemetry-instrument` 経由で実行する必要がある。
 
 ```dockerfile
 FROM --platform=linux/arm64 ghcr.io/astral-sh/uv:python3.11-bookworm-slim
@@ -172,11 +172,11 @@ EXPOSE 8080
 CMD ["uv", "run", "opentelemetry-instrument", "python", "-u", "main.py"]
 ```
 
-**必須要件**:
+必須要件は次のとおり。
 - プラットフォーム: `linux/arm64`
 - ポート: 8080
 - エンドポイント: `/invocations`, `/ping`
-- **Observability**: `opentelemetry-instrument` で起動
+- Observability: `opentelemetry-instrument` で起動する
 
 ---
 
@@ -202,7 +202,7 @@ aws bedrock-agentcore-control update-agent-runtime \
   --region us-west-2
 ```
 
-**重要**: `--authorizer-configuration` を省略すると認証タイプがIAMに戻る
+**`--authorizer-configuration` を省略すると認証タイプがIAMに戻る**。
 
 ---
 

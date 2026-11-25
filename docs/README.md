@@ -11,7 +11,7 @@ re:Invent 2026 向けの後継は [みのるんエージェント](https://githu
 
 ## 概要
 
-期間限定のデモアプリとして開発。参加者が re:Invent 2025 のセッション情報や会場情報などを気軽に質問できる。
+期間限定のデモアプリとして開発した。参加者が re:Invent 2025 のセッション情報や会場情報などを気軽に質問できる。
 
 ## 技術スタック
 
@@ -29,10 +29,10 @@ re:Invent 2026 向けの後継は [みのるんエージェント](https://githu
 
 ### 利用ツール（MCP）
 
-1. **retrieve** - Bedrock ナレッジベース検索（re:Invent 公式情報）
-2. **Tavily MCP** - Web検索（最新ニュース）
-3. **re-invent-2025-mcp** - セッション・スピーカー情報検索
-4. **AWS What's New** - AWS最新アップデート検索（RSSより）
+1. retrieve：Bedrock ナレッジベースで re:Invent 公式情報を検索
+2. Tavily MCP：最新ニュースをWeb検索
+3. re-invent-2025-mcp：セッション・スピーカー情報を検索
+4. AWS What's New：RSSからAWS最新アップデートを検索
 
 ## ドキュメント一覧
 

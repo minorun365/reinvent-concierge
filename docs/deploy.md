@@ -2,14 +2,14 @@
 
 このドキュメントでは、re:Inventコンシェルジュのデプロイ手順を説明します。
 
-> **Note**: 実際の認証情報・コピペ用コマンドは `docs/credentials.md`（gitignore済み）を参照してください。
+> Note: 実際の認証情報やコピペ用コマンドは、gitignore済みの `docs/credentials.md` を参照してください。
 
 ## 前提条件
 
-- AWS SSO ログイン済み
-- Docker Desktop インストール済み
-- Node.js 20+ インストール済み
-- uv インストール済み
+- AWS SSO にログイン済み
+- Docker Desktop をインストール済み
+- Node.js 20+ をインストール済み
+- uv をインストール済み
 
 ```bash
 aws sso login --profile=<your-profile>
@@ -53,14 +53,14 @@ docker push <your-account-id>.dkr.ecr.us-west-2.amazonaws.com/reinvent-concierge
 
 ## Step 2: AgentCore Memory 作成
 
-AWSコンソールで AgentCore Memory を作成：
+AWSコンソールで AgentCore Memory を作成します。
 
-1. Amazon Bedrock コンソール → AgentCore → Memory
-2. 「Create memory」をクリック
-3. 設定：
+1. Amazon Bedrock コンソールで AgentCore → Memory を開きます。
+2. 「Create memory」をクリックします。
+3. 次のように設定します。
    - Name: `ReinventConciergeMemory`
    - Description: `re:Inventコンシェルジュの会話履歴`
-4. 作成後、Memory ID をメモ → `docs/credentials.md` に記録
+4. 作成後、Memory ID を控えて `docs/credentials.md` に記録します。
 
 ---
 
@@ -68,22 +68,22 @@ AWSコンソールで AgentCore Memory を作成：
 
 ### 3.1 Runtime 作成
 
-AWSコンソールで AgentCore Runtime を作成：
+AWSコンソールで AgentCore Runtime を作成します。
 
-1. Amazon Bedrock コンソール → AgentCore → Runtimes
-2. 「Create runtime」をクリック
-3. 設定：
+1. Amazon Bedrock コンソールで AgentCore → Runtimes を開きます。
+2. 「Create runtime」をクリックします。
+3. 次のように設定します。
    - Name: `reinvent`
    - Container Image: `<your-account-id>.dkr.ecr.us-west-2.amazonaws.com/reinvent-concierge:latest`
    - 環境変数:
      - `TAVILY_API_KEY`: <your-tavily-api-key>
      - `KNOWLEDGE_BASE_ID`: <your-knowledge-base-id>
-     - `MEMORY_ID`: （Step 2で作成したMemory ID）
-4. 作成後、Runtime ID をメモ → `docs/credentials.md` に記録
+     - `MEMORY_ID`: Step 2で作成したMemory ID
+4. 作成後、Runtime ID を控えて `docs/credentials.md` に記録します。
 
 ### 3.2 環境変数 & 認証設定
 
-Cognito User Pool作成後、環境変数と認証を設定：
+Cognito User Pool の作成後、環境変数と認証を設定します。
 
 ```bash
 aws bedrock-agentcore-control update-agent-runtime \
@@ -97,31 +97,31 @@ aws bedrock-agentcore-control update-agent-runtime \
   --profile <your-profile>
 ```
 
-**必須の環境変数：**
+必須の環境変数は次のとおりです。
 
 | 変数名 | 説明 |
 |--------|------|
-| `TAVILY_API_KEY` | Tavily API キー（Web検索用） |
+| `TAVILY_API_KEY` | Web検索用の Tavily API キー |
 | `KNOWLEDGE_BASE_ID` | Bedrock ナレッジベース ID |
 | `MEMORY_ID` | AgentCore Memory ID |
 
-> 具体的な値は `docs/credentials.md` を参照
+> 具体的な値は `docs/credentials.md` を参照してください。
 
-10秒ほどでデプロイ完了します。
+10秒ほどでデプロイが完了します。
 
 ---
 
 ## Step 4: Cognito User Pool 作成
 
-AWSコンソールで Cognito User Pool を作成：
+AWSコンソールで Cognito User Pool を作成します。
 
-1. Amazon Cognito → User Pools → Create user pool
-2. 設定：
+1. Amazon Cognito → User Pools → Create user pool を開きます。
+2. 次のように設定します。
    - Sign-in: Email
    - Password policy: デフォルト
    - MFA: Off
-3. App client を作成
-4. User Pool ID と App Client ID をメモ → `docs/credentials.md` に記録
+3. App client を作成します。
+4. User Pool ID と App Client ID を控えて `docs/credentials.md` に記録します。
 
 ---
 
@@ -152,9 +152,9 @@ npm run dev
 
 ### 6.1 GitHub 連携
 
-1. Amplify コンソール → 「Host web app」
-2. GitHub を選択
-3. リポジトリとブランチを選択
+1. Amplify コンソールで「Host web app」を開きます。
+2. GitHub を選択します。
+3. リポジトリとブランチを選択します。
 
 ### 6.2 ビルド設定
 
@@ -180,7 +180,7 @@ frontend:
 
 ### 6.3 環境変数設定
 
-Amplifyコンソールで環境変数を設定：
+Amplifyコンソールで次の環境変数を設定します。
 
 - `VITE_USER_POOL_ID`
 - `VITE_USER_POOL_CLIENT_ID`
@@ -193,20 +193,20 @@ Amplifyコンソールで環境変数を設定：
 
 ### ヘルスチェックエラー（424）
 
-コンテナが起動に失敗している可能性。
-- CloudWatch Logsを確認（`/aws/bedrock-agentcore/runtimes/<runtime-id>`）
-- Dockerfileがシンプルな構成になっているか確認
+コンテナの起動に失敗している可能性があります。
+- CloudWatch Logs の `/aws/bedrock-agentcore/runtimes/<runtime-id>` を確認します。
+- Dockerfile がシンプルな構成になっているか確認します。
 
 ### 認証エラー（403）
 
-- `--authorizer-configuration` が正しく設定されているか確認
-- Cognito **access token** を使用しているか確認（id tokenではなく）
+- `--authorizer-configuration` が正しく設定されているか確認します。
+- id token ではなく Cognito の access token を使用しているか確認します。
 
 ### IAM権限エラー（AccessDeniedException）
 
-AgentCore Runtimeのサービスロールに必要な権限を追加：
+AgentCore Runtimeのサービスロールに必要な権限を追加します。
 
-**bedrock:Retrieve（ナレッジベース用）**
+ナレッジベース用の bedrock:Retrieve
 ```json
 {
     "Effect": "Allow",
@@ -215,7 +215,7 @@ AgentCore Runtimeのサービスロールに必要な権限を追加：
 }
 ```
 
-**bedrock-agentcore:ListEvents（Memory用）**
+Memory用の bedrock-agentcore:ListEvents
 ```json
 {
     "Effect": "Allow",
@@ -224,7 +224,7 @@ AgentCore Runtimeのサービスロールに必要な権限を追加：
 }
 ```
 
-**bedrock:InvokeModel（LLM呼び出し用）**
+LLM呼び出し用の bedrock:InvokeModel
 ```json
 {
     "Effect": "Allow",
@@ -233,7 +233,7 @@ AgentCore Runtimeのサービスロールに必要な権限を追加：
 }
 ```
 
-**bedrock-agentcore:CreateEvent（Memory用）**
+Memory用の bedrock-agentcore:CreateEvent
 ```json
 {
     "Effect": "Allow",
@@ -244,7 +244,7 @@ AgentCore Runtimeのサービスロールに必要な権限を追加：
 
 ### MCP stdio_client エラー
 
-`StdioServerParameters` を使用して正しく初期化：
+`StdioServerParameters` を使用して正しく初期化します。
 
 ```python
 from mcp import stdio_client, StdioServerParameters
@@ -272,9 +272,9 @@ ValidationException: Role validation failed for 'arn:aws:iam::xxx:role/...'
 Please verify that the role exists and its trust policy allows assumption by this service
 ```
 
-**原因**: `update-agent-runtime` コマンドで指定した `--role-arn` が、実際にRuntimeに設定されているロールと異なる。
+原因は、`update-agent-runtime` コマンドで指定した `--role-arn` が、実際にRuntimeに設定されているロールと異なることです。
 
-**解決方法**: 現在のRuntime情報を取得して、正しい `roleArn` を確認：
+解決するには、現在のRuntime情報を取得して正しい `roleArn` を確認します。
 
 ```bash
 aws bedrock-agentcore-control get-agent-runtime \
@@ -283,15 +283,15 @@ aws bedrock-agentcore-control get-agent-runtime \
   --profile <your-profile>
 ```
 
-出力から `roleArn` の値をコピーし、`update-agent-runtime` コマンドの `--role-arn` に指定する。
+出力から `roleArn` の値をコピーし、`update-agent-runtime` コマンドの `--role-arn` に指定します。
 
-> **Note**: AWSコンソールで作成したRuntimeは `AmazonBedrockAgentCoreRuntimeDefaultServiceRole-xxxxx` のような自動生成ロールが割り当てられていることが多い。
+> Note: AWSコンソールで作成したRuntimeには、`AmazonBedrockAgentCoreRuntimeDefaultServiceRole-xxxxx` のような自動生成ロールが割り当てられていることが多いです。
 
 ### Strands Agentsのストリーミングイベント
 
-**重要**: Strandsの `agent.stream_async(prompt)` から返されるイベントは、`agent` オブジェクトへの参照などPythonオブジェクトを含むため、**そのまま `yield event` すると文字列化されてしまう**。
+重要な点として、Strandsの `agent.stream_async(prompt)` から返されるイベントには `agent` オブジェクトへの参照などPythonオブジェクトが含まれるため、**そのまま `yield event` すると文字列化されてしまいます**。
 
-BedrockAgentCoreAppでは、イベントをJSON化可能な辞書に変換してからyieldする必要がある：
+BedrockAgentCoreAppでは、イベントをJSON化可能な辞書に変換してからyieldする必要があります。
 
 ```python
 def convert_event_to_dict(event) -> dict:
@@ -332,17 +332,17 @@ async for event in agent.stream_async(prompt):
         yield converted
 ```
 
-フロントエンドで受け取れるイベント：
+フロントエンドで受け取れるイベントは次のとおりです。
 
-- `type: "tool_use"` - ツール呼び出し開始（`tool_use.name` でツール名を取得）
-- `type: "tool_result"` - ツール呼び出し完了
-- `data` / `delta.text` - テキストストリーミング
+- `type: "tool_use"` はツール呼び出し開始で、`tool_use.name` でツール名を取得します。
+- `type: "tool_result"` はツール呼び出し完了です。
+- `data` / `delta.text` はテキストストリーミングです。
 
-フロントエンドでこれらのイベントを解析して、ツール使用中のUXを表示できる。
+フロントエンドでこれらのイベントを解析すると、ツール使用中のUXを表示できます。
 
 ### フロントエンドのマークダウン整形
 
-Tailwind CSS v4 では `@plugin` ディレクティブを使用：
+Tailwind CSS v4 では `@plugin` ディレクティブを使用します。
 
 ```css
 /* index.css */
@@ -361,11 +361,11 @@ import ReactMarkdown from 'react-markdown'
 
 ### Observability（トレース）が表示されない
 
-**原因**: Dockerfile で `opentelemetry-instrument` コマンドを使用していない
+原因は、Dockerfile で `opentelemetry-instrument` コマンドを使用していないことです。
 
-**解決方法**:
+解決方法は次のとおりです。
 
-1. `pyproject.toml` に必要なパッケージを追加：
+1. `pyproject.toml` に必要なパッケージを追加します。
 
 ```toml
 dependencies = [
@@ -374,7 +374,7 @@ dependencies = [
 ]
 ```
 
-2. Dockerfile を修正：
+2. Dockerfile を修正します。
 
 ```dockerfile
 # 依存関係をインストール
@@ -384,12 +384,12 @@ RUN uv sync
 CMD ["uv", "run", "opentelemetry-instrument", "python", "-u", "main.py"]
 ```
 
-3. CloudWatch Transaction Search を有効化（アカウントごとに1回）：
+3. アカウントごとに1回、CloudWatch Transaction Search を有効化します。
    - CloudWatch コンソール → Application Signals → Transaction Search
 
-4. 再ビルド & デプロイ
+4. 再ビルドしてデプロイします。
 
-> 詳細は `docs/dev-notes.md` の「AgentCore Observability 設定」セクションを参照
+> 詳細は `docs/dev-notes.md` の「AgentCore Observability 設定」セクションを参照してください。
 
 ---
 
@@ -397,9 +397,9 @@ CMD ["uv", "run", "opentelemetry-instrument", "python", "-u", "main.py"]
 
 ### バックエンド更新
 
-1. ECRログイン
-2. Docker ビルド & プッシュ
-3. AgentCore Runtime 更新
+1. ECR にログインします。
+2. Docker イメージをビルドしてプッシュします。
+3. AgentCore Runtime を更新します。
 
 ```bash
 # 1. ECRログイン
@@ -425,7 +425,7 @@ aws bedrock-agentcore-control update-agent-runtime \
   --profile <your-profile>
 ```
 
-> 具体的な値は `docs/credentials.md` を参照
+> 具体的な値は `docs/credentials.md` を参照してください。
 
 ### フロントエンド更新
 

@@ -4,25 +4,25 @@
 
 ### イベント形式
 
-Strands Agents + BedrockAgentCoreApp から返されるイベントには2種類の形式がある：
+Strands Agents + BedrockAgentCoreApp から返されるイベントには2種類の形式がある。
 
-**1. Bedrock API形式（JSON）**
+1. Bedrock API形式（JSON）
 ```json
 {"event": {"contentBlockDelta": {"delta": {"text": "回答テキスト..."}}}}
 {"event": {"contentBlockStart": {"start": {"toolUse": {"name": "search_sessions"}}}}}
 ```
 
-**2. Strands内部形式（Pythonオブジェクト含む）**
+2. Strands内部形式（Pythonオブジェクトを含む）
 ```
 "{'data': '...', 'agent': <strands.agent.agent.Agent object at 0x...>}"
 ```
 
 ### 解決策
 
-バックエンドで `convert_event()` 関数を使い、フロントエンドが期待する形式に変換：
+バックエンドで `convert_event()` 関数を使い、フロントエンドが扱う形式に変換する。
 
-**入力**: 上記の様々な形式のイベント
-**出力**: `{type: 'text', data: '...'}` または `{type: 'tool_use', tool_name: '...'}`
+入力: 上記のさまざまな形式のイベント
+出力: `{type: 'text', data: '...'}` または `{type: 'tool_use', tool_name: '...'}`
 
 ### ツール名マッピング（フロントエンド）
 
@@ -48,7 +48,7 @@ const TOOL_DISPLAY_NAMES: Record<string, string> = {
 | 認証方式 | IAM署名（Lambda） | JWT（AgentCore Runtime） |
 | フレームワーク | Next.js | Vite + React |
 
-Reference では `yield event` だけで動作しているが、本プロジェクトでは Pythonオブジェクトがシリアライズできない問題があったため、変換関数を追加。
+Reference では `yield event` だけで動いているが、本プロジェクトでは Pythonオブジェクトがシリアライズできない問題があったため、変換関数を追加した。
 
 ---
 
@@ -60,9 +60,9 @@ Reference では `yield event` だけで動作しているが、本プロジェ�
 ValidationException: Role validation failed for 'arn:aws:iam::xxx:role/...'
 ```
 
-**原因**: `update-agent-runtime` で指定した `--role-arn` が実際のRuntimeと異なる
+原因: `update-agent-runtime` で指定した `--role-arn` が実際のRuntimeと異なる。
 
-**解決**: 現在のRuntime情報を取得して正しいロールARNを確認
+解決: 現在のRuntime情報を取得し、正しいロールARNを確認する。
 
 ```bash
 aws bedrock-agentcore-control get-agent-runtime \
@@ -73,9 +73,9 @@ aws bedrock-agentcore-control get-agent-runtime \
 
 ### 認証エラー（403）
 
-**原因**: `--authorizer-configuration` を省略してデプロイした
+原因: `--authorizer-configuration` を省略してデプロイした。
 
-**解決**: JWT認証設定を含めて再デプロイ
+解決: JWT認証設定を含めて再デプロイする。
 
 ```bash
 aws bedrock-agentcore-control update-agent-runtime \
@@ -90,15 +90,15 @@ aws bedrock-agentcore-control update-agent-runtime \
 @plugin "@tailwindcss/typography";
 ```
 
-v3の `@tailwind base;` 形式とは異なるので注意。
+v3の `@tailwind base;` 形式とは異なるので注意する。
 
 ---
 
 ## 現在のRuntime状況
 
-- **Runtime ID**: reinvent-S3AJ2uCrco
-- **Version**: v14（2024-11-28更新）
-- **Status**: READY
+- Runtime ID: reinvent-S3AJ2uCrco
+- Version: v14（2024-11-28更新）
+- Status: READY
 
 ---
 
@@ -112,7 +112,7 @@ Dockerfileの `CMD` が単純な `python main.py` だったため、OpenTelemetr
 
 ### 解決策
 
-**1. 必要なパッケージを pyproject.toml に追加**
+1. 必要なパッケージを pyproject.toml に追加する
 
 ```toml
 dependencies = [
@@ -121,7 +121,7 @@ dependencies = [
 ]
 ```
 
-**2. Dockerfile で `opentelemetry-instrument` コマンドを使用**
+2. Dockerfile で `opentelemetry-instrument` コマンドを使う
 
 ```dockerfile
 # 変更前
@@ -140,11 +140,11 @@ CMD ["uv", "run", "opentelemetry-instrument", "python", "-u", "main.py"]
 
 ### 前提条件
 
-1. **CloudWatch Transaction Search を有効化**（アカウントごとに1回）
+1. CloudWatch Transaction Search を有効化する（アカウントごとに1回）
    - CloudWatch コンソール → Application Signals → Transaction Search
-   - 有効化後、約10分でトレースが表示可能に
+   - 有効化から約10分でトレースが表示されるようになる
 
-2. **trace_attributes をエージェントに設定**（任意だが推奨）
+2. trace_attributes をエージェントに設定する（任意だが推奨）
 
 ```python
 agent = Agent(
@@ -161,9 +161,9 @@ agent = Agent(
 
 CloudWatch コンソール → GenAI Observability → Bedrock AgentCore タブ
 
-- **Agents View**: エージェント一覧
-- **Sessions View**: セッション一覧
-- **Traces View**: トレース詳細（タイムライン、ツール呼び出し）
+- Agents View: エージェント一覧
+- Sessions View: セッション一覧
+- Traces View: トレース詳細（タイムライン、ツール呼び出し）
 
 ### 参考リンク
 
@@ -176,7 +176,7 @@ CloudWatch コンソール → GenAI Observability → Bedrock AgentCore タブ
 
 ### ログイン画面へのメッセージ追加
 
-Amplify UI の `Authenticator` コンポーネントは `components` prop でヘッダー・フッターをカスタマイズできる：
+Amplify UI の `Authenticator` コンポーネントは、`components` prop でヘッダーとフッターをカスタマイズできる。
 
 ```tsx
 <Authenticator
@@ -200,7 +200,7 @@ Amplify UI の `Authenticator` コンポーネントは `components` prop でヘ
 
 ### Amplify環境変数の設定
 
-Amplify Hosting でデプロイしたアプリに環境変数を設定するには：
+Amplify Hosting でデプロイしたアプリには、次のコマンドで環境変数を設定する。
 
 ```bash
 aws amplify update-app \
@@ -213,11 +213,11 @@ aws amplify update-app \
   --region us-west-2 --profile sandbox
 ```
 
-設定後、再デプロイが必要。
+設定後は**再デプロイが必要になる**。
 
 ### Amplify UI テーマカラーのカスタマイズ
 
-デフォルトのコバルトブルーをバイオレット系に変更：
+デフォルトのコバルトブルーをバイオレット系に変更する。
 
 ```css
 /* index.css */
@@ -243,10 +243,10 @@ aws amplify update-app \
 }
 ```
 
-**ポイント**:
-- セレクタは `[data-amplify-authenticator]` を使用（`:root` より詳細度が高い）
-- `--amplify-colors-primary-*` でベースカラーを定義
-- 各コンポーネント（ボタン、タブ、入力フィールド）の色も個別に設定
+設定時のポイントは次の通り。
+- セレクタには `:root` より詳細度の高い `[data-amplify-authenticator]` を使う
+- `--amplify-colors-primary-*` でベースカラーを定義する
+- ボタン、タブ、入力フィールドの各コンポーネントの色も個別に設定する
 
 参考: [Amplify UI CSS Variables](https://ui.docs.amplify.aws/react/theming/css-variables)
 
@@ -256,15 +256,15 @@ aws amplify update-app \
 
 ### Dynamic Island / ノッチ対応
 
-iPhone 14 Pro以降の Dynamic Island やノッチに対応するには：
+iPhone 14 Pro以降の Dynamic Island やノッチには、次の手順で対応する。
 
-**1. index.html に `viewport-fit=cover` を追加**
+1. index.html に `viewport-fit=cover` を追加する
 
 ```html
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 ```
 
-**2. CSS で safe-area-inset を使用**
+2. CSS で safe-area-inset を使う
 
 ```css
 /* index.css */
@@ -275,7 +275,7 @@ iPhone 14 Pro以降の Dynamic Island やノッチに対応するには：
 }
 ```
 
-**3. ヘッダー要素にクラスを適用**
+3. ヘッダー要素にクラスを適用する
 
 ```tsx
 <div className="safe-area-top bg-violet-950 ...">
@@ -283,14 +283,14 @@ iPhone 14 Pro以降の Dynamic Island やノッチに対応するには：
 
 ### オーバースクロール時の背景色
 
-スマホで画面端をスワイプした時に見える背景色を制御：
+スマホで画面端をスワイプしたときに見える背景色を制御する。
 
 ```html
 <!-- index.html -->
 <body class="bg-violet-950">
 ```
 
-これで上方向にオーバースクロールした時、ヘッダーと同じ色が見える。
+これで上方向にオーバースクロールしたとき、ヘッダーと同じ色が見える。
 
 ---
 
@@ -303,11 +303,11 @@ iPhone 14 Pro以降の Dynamic Island やノッチに対応するには：
 border-2 border-gray-400 border-t-transparent rounded-full animate-spin
 ```
 
-この方法はスマホ（特にiOS Safari）でいびつに見えることがある。
+この方法はスマホ、特にiOS Safariでいびつに見えることがある。
 
 ### SVGスピナー（推奨）
 
-デバイス間で一貫した見た目を得るにはSVGを使用：
+どのデバイスでも見た目を揃えるにはSVGを使う。
 
 ```tsx
 <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
@@ -316,10 +316,10 @@ border-2 border-gray-400 border-t-transparent rounded-full animate-spin
 </svg>
 ```
 
-**利点**:
-- ベクター形式なのでどの解像度でも綺麗
+SVGを使う利点は次の通り。
+- ベクター形式なのでどの解像度でもきれい
 - 完全な円として描画される
-- デバイス間で一貫した見た目
+- デバイス間で見た目が揃う
 
 ---
 
@@ -327,7 +327,7 @@ border-2 border-gray-400 border-t-transparent rounded-full animate-spin
 
 ### baggage ヘッダーの使用
 
-OpenTelemetry の `baggage` ヘッダーを使用して、フロントエンドからバックエンドにユーザー情報を伝播できる：
+OpenTelemetry の `baggage` ヘッダーを使うと、フロントエンドからバックエンドへユーザー情報を伝播できる。
 
 ```tsx
 // ChatInterface.tsx
@@ -344,15 +344,15 @@ fetch(url, {
 })
 ```
 
-これにより、CloudWatch トレースでどのユーザーがどのリクエストを発行したか追跡可能。
+CloudWatch トレースで、どのユーザーがどのリクエストを発行したかを追跡できるようになる。
 
 ---
 
 ## Favicon設定
 
-Viteプロジェクトでfaviconを設定：
+Viteプロジェクトでfaviconを設定する。
 
-**1. public フォルダに配置**
+1. public フォルダに配置する
 
 ```bash
 mkdir -p frontend/public
@@ -360,7 +360,7 @@ mkdir -p frontend/public
 magick input.png -resize 32x32 frontend/public/favicon.ico
 ```
 
-**2. index.html にリンクを追加**
+2. index.html にリンクを追加する
 
 ```html
 <link rel="icon" type="image/x-icon" href="/favicon.ico" />

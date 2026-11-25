@@ -47,21 +47,21 @@
 
 ## リージョン
 
-**すべて us-west-2 (オレゴン) に統一**
+すべて **us-west-2 (オレゴン)** に統一しています。
 
 ## 認証フロー
 
-1. ユーザーがアプリにアクセス
-2. Amplify UI Authenticator でサインイン画面を表示
-3. メール+パスワードでサインイン/サインアップ
-4. Cognito から JWT (access_token) を取得
-5. AgentCore Runtime に `Authorization: Bearer <token>` で認証
+1. ユーザーがアプリにアクセスする
+2. Amplify UI Authenticator でサインイン画面を表示する
+3. メールとパスワードでサインインまたはサインアップする
+4. Cognito から JWT (access_token) を取得する
+5. `Authorization: Bearer <token>` を使って AgentCore Runtime の認証を行う
 
 ## ストリーミング処理
 
 ### バックエンド（convert_event関数）
 
-Strands Agentsからのイベントをフロントエンド向けJSON形式に変換：
+Strands Agentsからのイベントをフロントエンド向けのJSON形式に変換します。
 
 ```python
 def convert_event(event) -> dict | None:
